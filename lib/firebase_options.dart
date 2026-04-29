@@ -1,10 +1,3 @@
-// PLACEHOLDER — Run `flutterfire configure` to generate your real config.
-// Steps:
-//   1. dart pub global activate flutterfire_cli
-//   2. cd C:\Users\ahmed\Desktop\wizmi
-//   3. flutterfire configure
-// Then replace this file with the generated one.
-
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform;
 
@@ -19,10 +12,10 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'YOUR_API_KEY_HERE',
-    appId: '1:000000000000:android:0000000000000000',
-    messagingSenderId: '000000000000',
-    projectId: 'your-project-id',
-    storageBucket: 'your-project-id.appspot.com',
+    apiKey: 'AIzaSyBmj0FGo4CoJA8b0PV7LYRqUzN9ymj9dB8',
+    appId: '1:953091025079:android:56b8a3bc9acbe0a4514532',
+    messagingSenderId: '953091025079',
+    projectId: 'thproject-fdef3',
+    storageBucket: 'thproject-fdef3.firebasestorage.app',
   );
 }

@@ -1,63 +1,84 @@
-import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:provider/provider.dart';
-import 'core/theme/app_theme.dart';
+import 'package:wizmi/Services.dart';
+import 'package:wizmi/sparepartspage.dart';
+import 'package:wizmi/towingservicepage.dart';
+import 'package:wizmi/admin/admin_dashboard.dart';
+import 'package:wizmi/admin/admin_login.dart';
+import 'package:wizmi/admin/admin_signup.dart';
+import 'package:wizmi/carbrands.dart';
+import 'package:wizmi/cartpage.dart';
+import 'package:wizmi/checkout.dart';
+import 'package:wizmi/carrentalpage.dart';
+import 'package:wizmi/carwashingpage.dart';
+import 'package:wizmi/diagnosticservices.dart';
+import 'package:wizmi/homepage.dart';
+import 'package:wizmi/login.dart';
+import 'package:wizmi/mechanicservicepage.dart';
+import 'package:wizmi/profile.dart';
+import 'package:wizmi/splash_screen.dart';
 import 'firebase_options.dart';
-import 'providers/auth_provider.dart';
-import 'providers/order_provider.dart';
-import 'screens/splash/splash_screen.dart';
-import 'screens/onboarding/onboarding_screen.dart';
-import 'screens/auth/login_screen.dart';
-import 'screens/auth/signup_screen.dart';
-import 'screens/home/home_screen.dart';
-import 'screens/order/fuel_selection_screen.dart';
-import 'screens/order/order_summary_screen.dart';
-import 'screens/order/order_tracking_screen.dart';
-import 'screens/admin/admin_login_screen.dart';
-import 'screens/admin/admin_dashboard_screen.dart';
+import 'package:wizmi/signup.dart';
+import 'package:flutter/material.dart';
+import 'package:wizmi/notifications_page.dart';
+import 'package:wizmi/services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  runApp(const WizmiApp());
+  await NotificationService.initialize();
+  debugPrint('firebase initialized');
+  runApp(const Main());
 }
 
-class WizmiApp extends StatelessWidget {
-  const WizmiApp({super.key});
+class Main extends StatefulWidget {
+  const Main({super.key});
+
+  @override
+  State<Main> createState() => _MainState();
+}
+
+class _MainState extends State<Main> {
+  @override
+  void initState() {
+    FirebaseAuth.instance.authStateChanges().listen((User? user) {
+      if (user == null) {
+        debugPrint('User is currently signed out!');
+      } else {
+        debugPrint('User is signed in!');
+      }
+    });
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => WizmiAuthProvider()),
-        ChangeNotifierProvider(create: (_) => OrderProvider()),
-      ],
-      child: MaterialApp(
-        title: 'Wizmi',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.dark,
-        initialRoute: '/',
-        routes: {
-          '/': (_) => const SplashScreen(),
-          '/onboarding': (_) => const OnboardingScreen(),
-          '/login': (_) => const LoginScreen(),
-          '/signup': (_) => const SignupScreen(),
-          '/home': (_) => const HomeScreen(),
-          '/fuel_selection': (_) => const FuelSelectionScreen(),
-          '/order_summary': (_) => const OrderSummaryScreen(),
-          '/admin_login': (_) => const AdminLoginScreen(),
-          '/admin_dashboard': (_) => const AdminDashboardScreen(),
-        },
-        onGenerateRoute: (settings) {
-          if (settings.name == '/order_tracking') {
-            final orderId = settings.arguments as String? ?? '';
-            return MaterialPageRoute(
-              builder: (_) => OrderTrackingScreen(orderId: orderId),
-            );
-          }
-          return null;
-        },
-      ),
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: const Splash(),
+      routes: {
+        'splash':          (context) => const Splash(),
+        'login':           (context) => const Login(),
+        'signup':          (context) => const SignUp(),
+        'home':            (context) => const HomePage(),
+        'admin_login':     (context) => const AdminLogin(),
+        'admin_signup':    (context) => const AdminSignup(),
+        'admin_dashboard': (context) => const AdminDashboard(),
+        'services':        (context) => ServicesPage(),
+        'towing':          (context) => TowingServicePage(),
+        'mechanic':        (context) => MechanicService(),
+        'diagnostic':      (context) => DiagnosticService(),
+        'spareparts':      (context) => const Product(),
+        'carwash':         (context) => CarWashingPage(),
+        'rentcar':         (context) => CarRentalPage(),
+        'carbrands':       (context) => const CarBrands(),
+        'cart':            (context) => const CartPage(),
+        'checkout':        (context) => const CheckoutPage(items: [], total: 0),
+        'profile':         (context) => const ProfilePage(),
+        'log':             (context) => const Login(),
+        'sign':            (context) => const SignUp(),
+        'notifications':   (context) => const NotificationsPage(),
+      },
     );
   }
 }

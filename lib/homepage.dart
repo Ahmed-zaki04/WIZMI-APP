@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -10,270 +10,328 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  final Color primaryColor = const Color.fromARGB(255, 10, 61, 102);
+  static const Color _primary = Color(0xFF0D47A1);
 
-  final List<Map<String, dynamic>> services = [
+  final List<Map<String, dynamic>> _services = [
     {
       'icon': Icons.build_circle_outlined,
       'title': 'Spare Parts',
       'subtitle': 'Quality assured components',
       'route': 'carbrands',
-      'color': Color(0xFF1565C0),  // Blue 800
+      'color': const Color(0xFF1565C0),
     },
-    
     {
       'icon': Icons.local_shipping_outlined,
       'title': 'Premium Towing',
       'subtitle': 'Swift roadside assistance',
       'route': 'towing',
-      'color': Color(0xFF1976D2),  // Blue 700
+      'color': const Color(0xFF1976D2),
     },
     {
       'icon': Icons.engineering,
       'title': 'Expert Mechanic',
       'subtitle': 'Premium repair services',
       'route': 'mechanic',
-      'color': Color(0xFF1E88E5),  // Blue 600
+      'color': const Color(0xFF1E88E5),
     },
     {
       'icon': Icons.cleaning_services_outlined,
       'title': 'Luxury Wash',
       'subtitle': 'Premium detailing service',
       'route': 'carwash',
-      'color': Color(0xFF0D47A1),  // Blue 900
+      'color': const Color(0xFF0D47A1),
     },
     {
       'icon': Icons.directions_car_outlined,
       'title': 'Car Rentals',
       'subtitle': 'Premium fleet selection',
       'route': 'rentcar',
-      'color': Color(0xFF0277BD),  // Light Blue 800
+      'color': const Color(0xFF0277BD),
     },
     {
       'icon': Icons.speed_outlined,
       'title': 'Smart Diagnostics',
       'subtitle': 'Advanced system analysis',
       'route': 'diagnostic',
-      'color': Color(0xFF01579B),  // Light Blue 900
+      'color': const Color(0xFF01579B),
     },
   ];
 
-  void _showLogoutDialog() {
-    showDialog(
+  String _userName = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserName();
+  }
+
+  Future<void> _loadUserName() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+      if (doc.exists && mounted) {
+        setState(() {
+          _userName = doc.data()?['name'] ?? doc.data()?['firstName'] ?? '';
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _logout() async {
+    final confirm = await showDialog<bool>(
       context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Logout'),
-          content: Text('Are you sure you want to logout?'),
-          actions: [
-            TextButton(
-              child: Text('Cancel'),
-              onPressed: () => Navigator.pop(context),
-            ),
-            TextButton(
-              child: Text('Logout', style: TextStyle(color: Colors.red)),
-              onPressed: () async {
-                await FirebaseAuth.instance.signOut();
-                Navigator.pop(context); // Close dialog
-                Navigator.pushReplacementNamed(context, 'log');
-              },
-            ),
-          ],
-        );
-      },
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Logout'),
+        content: const Text('Are you sure you want to logout?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Logout', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
     );
+    if (confirm == true) {
+      await FirebaseAuth.instance.signOut();
+      if (mounted) Navigator.pushReplacementNamed(context, 'log');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
-      extendBodyBehindAppBar: true,
+      backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: _primary,
         elevation: 0,
-        title: Text(
+        title: const Text(
           'WIZMI',
           style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: primaryColor,
+            fontSize: 22,
+            fontWeight: FontWeight.w900,
+            color: Colors.white,
+            letterSpacing: 2,
           ),
         ),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.white),
+            tooltip: 'Logout',
+            onPressed: _logout,
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Banner Image using StreamBuilder
-            StreamBuilder(
-              stream: FirebaseFirestore.instance.collection("homepage").snapshots(),
-              builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
-                if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
-                  return Container(
-                    width: double.infinity,
-                    child: Image.network(
-                      snapshot.data!.docs[0]['image'],
-                      fit: BoxFit.contain,
-                      errorBuilder: (context, error, stackTrace) {
-                        debugPrint('Error loading image: $error');
-                        return Center(child: Text('Error loading image'));
-                      },
-                    ),
-                  );
-                }
-                return SizedBox(
-                  height: 200,
-                );
-              },
-            ),
-
-            // Welcome Text
-            Container(
-              padding: EdgeInsets.fromLTRB(20, 5, 20, 15),
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(30),
-                  bottomRight: Radius.circular(30),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.1),
-                    spreadRadius: 1,
-                    blurRadius: 10,
-                    offset: Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Text(
-                    'Welcome to WIZMI',
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: primaryColor,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  SizedBox(height: 2),
-                  Text(
-                    'Your one-stop solution for all car services',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey[600],
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
-            
-            // Services Grid
-            Padding(
-              padding: EdgeInsets.fromLTRB(20, 2, 20, 20),
-              child: GridView.builder(
-                shrinkWrap: true,
-                physics: NeverScrollableScrollPhysics(),
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  childAspectRatio: 0.85,
-                  crossAxisSpacing: 15,
-                  mainAxisSpacing: 15,
-                ),
-                itemCount: services.length,
-                itemBuilder: (context, index) {
-                  final service = services[index];
-                  return Card(
-                    elevation: 4,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: InkWell(
-                      onTap: () => Navigator.pushNamed(context, service['route']),
-                      borderRadius: BorderRadius.circular(20),
-                      child: Container(
-                        padding: EdgeInsets.all(15),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              service['color'].withOpacity(0.8),
-                              service['color'],
-                            ],
-                          ),
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              service['icon'],
-                              size: 50,
-                              color: Colors.white,
-                            ),
-                            SizedBox(height: 15),
-                            Text(
-                              service['title'],
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                            SizedBox(height: 8),
-                            Text(
-                              service['subtitle'],
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.white.withOpacity(0.9),
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
+            _buildHeroBanner(),
+            _buildSectionHeader(),
+            _buildServicesGrid(),
           ],
         ),
       ),
       bottomNavigationBar: NavigationBar(
+        backgroundColor: Colors.white,
+        elevation: 8,
+        indicatorColor: _primary.withValues(alpha: 0.12),
         destinations: const [
           NavigationDestination(
-            icon: Icon(Icons.home),
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home, color: Color(0xFF0D47A1)),
             label: 'Home',
           ),
           NavigationDestination(
-            icon: Icon(Icons.person),
+            icon: Icon(Icons.person_outline),
+            selectedIcon: Icon(Icons.person, color: Color(0xFF0D47A1)),
             label: 'Profile',
           ),
           NavigationDestination(
-            icon: Icon(Icons.notifications),
+            icon: Icon(Icons.notifications_outlined),
+            selectedIcon: Icon(Icons.notifications, color: Color(0xFF0D47A1)),
             label: 'Notifications',
           ),
         ],
         onDestinationSelected: (index) {
-          switch (index) {
-            case 0:
-              break;
-            case 1:
-              Navigator.pushNamed(context, 'profile');
-              break;
-            case 2:
-              Navigator.pushNamed(context, 'notifications');
-              break;
-          }
+          if (index == 1) Navigator.pushNamed(context, 'profile');
+          if (index == 2) Navigator.pushNamed(context, 'notifications');
         },
+      ),
+    );
+  }
+
+  Widget _buildHeroBanner() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance.collection('homepage').snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
+          final imageUrl =
+              snapshot.data!.docs[0]['image'] as String? ?? '';
+          if (imageUrl.isNotEmpty) {
+            return SizedBox(
+              width: double.infinity,
+              height: 200,
+              child: Image.network(
+                imageUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _buildDefaultHero(),
+              ),
+            );
+          }
+        }
+        return _buildDefaultHero();
+      },
+    );
+  }
+
+  Widget _buildDefaultHero() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF0D47A1), Color(0xFF1976D2), Color(0xFF42A5F5)],
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.directions_car, size: 48, color: Colors.white70),
+          const SizedBox(height: 12),
+          Text(
+            _userName.isNotEmpty ? 'Hello, $_userName!' : 'Welcome to WIZMI',
+            style: const TextStyle(
+              fontSize: 26,
+              fontWeight: FontWeight.w900,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Your one-stop solution for all car services',
+            style: TextStyle(fontSize: 14, color: Colors.white70),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader() {
+    return const Padding(
+      padding: EdgeInsets.fromLTRB(20, 24, 20, 8),
+      child: Text(
+        'Our Services',
+        style: TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+          color: Color(0xFF1A1A2E),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildServicesGrid() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+      child: GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          childAspectRatio: 0.88,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+        ),
+        itemCount: _services.length,
+        itemBuilder: (context, index) =>
+            _ServiceCard(service: _services[index]),
+      ),
+    );
+  }
+}
+
+class _ServiceCard extends StatelessWidget {
+  final Map<String, dynamic> service;
+  const _ServiceCard({required this.service});
+
+  @override
+  Widget build(BuildContext context) {
+    final Color color = service['color'] as Color;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => Navigator.pushNamed(context, service['route'] as String),
+        borderRadius: BorderRadius.circular(20),
+        child: Ink(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [color.withValues(alpha: 0.85), color],
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: color.withValues(alpha: 0.35),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    service['icon'] as IconData,
+                    size: 36,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  service['title'] as String,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  service['subtitle'] as String,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.white.withValues(alpha: 0.85),
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

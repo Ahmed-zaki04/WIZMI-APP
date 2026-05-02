@@ -27,7 +27,6 @@ class _NotificationsPageState extends State<NotificationsPage> {
               stream: FirebaseFirestore.instance
                   .collection('notifications')
                   .where('userId', isEqualTo: currentUser.uid)
-                  .orderBy('timestamp', descending: true)
                   .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
@@ -38,7 +37,14 @@ class _NotificationsPageState extends State<NotificationsPage> {
                   return const Center(child: CircularProgressIndicator());
                 }
 
-                final notifications = snapshot.data!.docs;
+                final notifications = snapshot.data!.docs
+                  ..sort((a, b) {
+                    final aTs = (a.data() as Map<String, dynamic>)['timestamp'] as Timestamp?;
+                    final bTs = (b.data() as Map<String, dynamic>)['timestamp'] as Timestamp?;
+                    if (aTs == null) return 1;
+                    if (bTs == null) return -1;
+                    return bTs.compareTo(aTs);
+                  });
 
                 if (notifications.isEmpty) {
                   return const Center(

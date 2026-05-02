@@ -15,8 +15,10 @@ import 'package:wizmi/diagnosticservices.dart';
 import 'package:wizmi/homepage.dart';
 import 'package:wizmi/login.dart';
 import 'package:wizmi/mechanicservicepage.dart';
+import 'package:wizmi/my_bookings.dart';
 import 'package:wizmi/profile.dart';
 import 'package:wizmi/splash_screen.dart';
+import 'package:wizmi/theme.dart';
 import 'firebase_options.dart';
 import 'package:wizmi/signup.dart';
 import 'package:flutter/material.dart';
@@ -55,6 +57,7 @@ class _MainState extends State<Main> {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+      theme: AppTheme.light,
       home: const Splash(),
       routes: {
         'splash':          (context) => const Splash(),
@@ -78,6 +81,7 @@ class _MainState extends State<Main> {
         'log':             (context) => const Login(),
         'sign':            (context) => const SignUp(),
         'notifications':   (context) => const NotificationsPage(),
+        'my_bookings':     (context) => const MyBookingsPage(),
       },
     );
   }

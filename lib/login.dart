@@ -1,9 +1,9 @@
-// import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'signup.dart'; // Import for sign-up page
-
+import 'package:google_fonts/google_fonts.dart';
+import 'package:wizmi/theme.dart';
+import 'signup.dart';
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -13,325 +13,231 @@ class Login extends StatefulWidget {
 }
 
 class _LoginPageState extends State<Login> {
+  final TextEditingController email = TextEditingController();
+  final TextEditingController pass  = TextEditingController();
+  final GlobalKey<FormState> form   = GlobalKey<FormState>();
+  bool _obscure = true;
 
-  TextEditingController email = TextEditingController();
-  TextEditingController pass = TextEditingController();
+  @override
+  void dispose() {
+    email.dispose();
+    pass.dispose();
+    super.dispose();
+  }
 
-  GlobalKey<FormState> form = GlobalKey<FormState>();
+  Future<void> _login() async {
+    if (!form.currentState!.validate()) return;
+    try {
+      final credential = await FirebaseAuth.instance
+          .signInWithEmailAndPassword(
+              email: email.text.trim(), password: pass.text);
+      if (credential.user!.emailVerified) {
+        if (mounted) {
+          Navigator.of(context).pushNamedAndRemoveUntil('home', (r) => false);
+        }
+      } else {
+        if (mounted) {
+          AwesomeDialog(
+            context: context,
+            dialogType: DialogType.warning,
+            animType: AnimType.rightSlide,
+            title: 'Error',
+            desc: 'Verify your email first!',
+          ).show();
+        }
+      }
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      final msg = e.code == 'user-not-found'
+          ? 'User not found!'
+          : e.code == 'wrong-password'
+              ? 'Wrong password.'
+              : 'Login failed. Please try again.';
+      AwesomeDialog(
+        context: context,
+        dialogType: DialogType.error,
+        animType: AnimType.rightSlide,
+        title: 'Error',
+        desc: msg,
+      ).show();
+    }
+  }
+
+  void _forgotPassword() {
+    if (email.text.isEmpty) {
+      AwesomeDialog(
+        context: context,
+        dialogType: DialogType.error,
+        animType: AnimType.rightSlide,
+        title: 'Error',
+        desc: 'Please enter your email first before pressing forgot password!',
+      ).show();
+      return;
+    }
+    try {
+      FirebaseAuth.instance.sendPasswordResetEmail(email: email.text.trim());
+      AwesomeDialog(
+        context: context,
+        dialogType: DialogType.success,
+        animType: AnimType.rightSlide,
+        title: 'Success',
+        desc: 'Password reset email sent!',
+      ).show();
+    } catch (_) {
+      AwesomeDialog(
+        context: context,
+        dialogType: DialogType.error,
+        animType: AnimType.rightSlide,
+        title: 'Error',
+        desc: 'Check spelling or user not found!',
+      ).show();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF0D47A1),
-              Colors.black,
-            ],
-          ),
-        ),
-        child: Center(
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 30.0),
+      backgroundColor: AppTheme.background,
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // ── WIZMI logo header ──────────────────────────────────────
+            Container(
+              height: 200,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    AppTheme.primaryDark,
+                    AppTheme.primary,
+                    AppTheme.primaryLight,
+                  ],
+                ),
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(36),
+                  bottomRight: Radius.circular(36),
+                ),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.directions_car_rounded,
+                      color: Colors.white, size: 52),
+                  const SizedBox(height: 10),
+                  Text(
+                    'WIZMI',
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontSize: 32,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // ── Form ──────────────────────────────────────────────────
+            Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 28, vertical: 36),
               child: Form(
                 key: form,
                 child: Column(
-                  mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Logo or Icon
-                    Icon(
-                      Icons.car_repair,
-                      size: 80,
-                      color: Colors.white,
+                    Text(
+                      'Welcome back!',
+                      style: Theme.of(context).textTheme.headlineMedium,
+                      textAlign: TextAlign.center,
                     ),
-                    SizedBox(height: 20),
-                    
-                    // Header Text with Animation
-                    TweenAnimationBuilder(
-                      duration: Duration(milliseconds: 800),
-                      tween: Tween<double>(begin: 0, end: 1),
-                      builder: (context, double value, child) {
-                        return Opacity(
-                          opacity: value,
-                          child: Transform.translate(
-                            offset: Offset(0, (1 - value) * 20),
-                            child: child,
-                          ),
-                        );
-                      },
-                      child: const Text(
-                        'Welcome back!\nLogin Please',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.w900,
-                          color: Colors.white,
-                          height: 1.2,
+                    const SizedBox(height: 6),
+                    Text(
+                      'Sign in to continue',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 32),
+
+                    // Email
+                    TextFormField(
+                      controller: email,
+                      keyboardType: TextInputType.emailAddress,
+                      validator: (v) =>
+                          (v == null || v.isEmpty) ? "Email can't be empty" : null,
+                      decoration: const InputDecoration(
+                        labelText: 'Email',
+                        prefixIcon: Icon(Icons.email_outlined),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Password
+                    TextFormField(
+                      controller: pass,
+                      obscureText: _obscure,
+                      validator: (v) =>
+                          (v == null || v.isEmpty) ? "Password can't be empty" : null,
+                      decoration: InputDecoration(
+                        labelText: 'Password',
+                        prefixIcon: const Icon(Icons.lock_outline),
+                        suffixIcon: IconButton(
+                          icon: Icon(_obscure
+                              ? Icons.visibility_off_outlined
+                              : Icons.visibility_outlined),
+                          onPressed: () =>
+                              setState(() => _obscure = !_obscure),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 40),
-                
-                    // Email Field with Animation
-                    TweenAnimationBuilder(
-                      duration: Duration(milliseconds: 800),
-                      tween: Tween<double>(begin: 0, end: 1),
-                      builder: (context, double value, child) {
-                        return Opacity(
-                          opacity: value,
-                          child: Transform.translate(
-                            offset: Offset((1 - value) * 30, 0),
-                            child: child,
-                          ),
-                        );
-                      },
-                      child: TextFormField(
-                        validator: (value) {
-                          if(value!.isEmpty){
-                            return ("Email can't be empty");
-                          }
-                          return null;
-                        },
-                        controller: email,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: InputDecoration(
-                          hintText: 'Email',
-                          hintStyle: const TextStyle(color: Colors.white70),
-                          filled: true,
-                          fillColor: Colors.white.withOpacity(0.1),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none,
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.white24),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.white),
-                          ),
-                          prefixIcon: const Icon(Icons.email, color: Colors.white70),
-                        ),
+
+                    // Forgot password inline
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: _forgotPassword,
+                        child: const Text('Forgot Password?'),
                       ),
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Login button
+                    ElevatedButton(
+                      onPressed: _login,
+                      child: const Text('Login'),
                     ),
                     const SizedBox(height: 20),
-                
-                    // Password Field with Animation
-                    TweenAnimationBuilder(
-                      duration: Duration(milliseconds: 800),
-                      tween: Tween<double>(begin: 0, end: 1),
-                      builder: (context, double value, child) {
-                        return Opacity(
-                          opacity: value,
-                          child: Transform.translate(
-                            offset: Offset((1 - value) * 30, 0),
-                            child: child,
-                          ),
-                        );
-                      },
-                      child: TextFormField(
-                        validator: (value) {
-                          if(value!.isEmpty){
-                            return("Password can't be empty");
-                          }
-                          return null;
-                        },
-                        controller: pass,
-                        obscureText: true,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: InputDecoration(
-                          hintText: 'Password',
-                          hintStyle: const TextStyle(color: Colors.white70),
-                          filled: true,
-                          fillColor: Colors.white.withOpacity(0.1),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none,
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.white24),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.white),
-                          ),
-                          prefixIcon: const Icon(Icons.lock, color: Colors.white70),
+
+                    // Sign up link
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          "Don't have an account? ",
+                          style: Theme.of(context).textTheme.bodyMedium,
                         ),
-                      ),
-                    ),
-                    const SizedBox(height: 30),
-                
-                    // Login Button with Animation
-                    TweenAnimationBuilder(
-                      duration: Duration(milliseconds: 800),
-                      tween: Tween<double>(begin: 0, end: 1),
-                      builder: (context, double value, child) {
-                        return Opacity(
-                          opacity: value,
-                          child: Transform.translate(
-                            offset: Offset(0, (1 - value) * 20),
-                            child: child,
+                        TextButton(
+                          onPressed: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => const SignUp()),
                           ),
-                        );
-                      },
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xFF0D47A1),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          elevation: 4,
+                          child: const Text('Sign Up'),
                         ),
-                        onPressed: () async {
-                          if (form.currentState!.validate()) {
-                            try {
-                              final credential = await FirebaseAuth.instance
-                                  .signInWithEmailAndPassword(
-                                      email: email.text, password: pass.text);
-                              if (credential.user!.emailVerified) {
-                                Navigator.of(context).pushNamedAndRemoveUntil(
-                                    "home", (route) => false);
-                              } else {
-                                AwesomeDialog(
-                                  context: context,
-                                  dialogType: DialogType.warning,
-                                  animType: AnimType.rightSlide,
-                                  title: 'Error',
-                                  desc: 'Verify your email first!',
-                                ).show();
-                              }
-                            } on FirebaseAuthException catch (e) {
-                              if (e.code == 'user-not-found') {
-                                AwesomeDialog(
-                                  context: context,
-                                  dialogType: DialogType.error,
-                                  animType: AnimType.rightSlide,
-                                  title: 'Error',
-                                  desc: 'User not found!',
-                                ).show();
-                              } else if (e.code == 'wrong-password') {
-                                AwesomeDialog(
-                                  context: context,
-                                  dialogType: DialogType.error,
-                                  animType: AnimType.rightSlide,
-                                  title: 'Error',
-                                  desc: 'Wrong Password',
-                                ).show();
-                              }
-                            }
-                          }
-                        },
-                        child: const Text(
-                          'Login',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
+                      ],
                     ),
-                    const SizedBox(height: 25),
-                
-                    // Sign Up and Forgot Password Links with Animation
-                    TweenAnimationBuilder(
-                      duration: Duration(milliseconds: 800),
-                      tween: Tween<double>(begin: 0, end: 1),
-                      builder: (context, double value, child) {
-                        return Opacity(
-                          opacity: value,
-                          child: Transform.translate(
-                            offset: Offset(0, (1 - value) * 20),
-                            child: child,
-                          ),
-                        );
-                      },
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          TextButton(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (context) => const SignUp()),
-                              );
-                            },
-                            style: TextButton.styleFrom(
-                              foregroundColor: Colors.white,
-                            ),
-                            child: const Text(
-                              'Sign Up',
-                              style: TextStyle(
-                                color: Colors.white,
-                                decoration: TextDecoration.underline,
-                                fontSize: 16,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 20),
-                          TextButton(
-                            onPressed: () {
-                              if(email.text==""){
-                                AwesomeDialog(
-                      context: context,
-                      dialogType:DialogType.error,
-                      animType: AnimType.rightSlide,
-                      title: "Error",
-                      desc: 'Please enter your email first before pressing on forgot password!',
-                    ).show();
-                    return;
-                              }
-                              try{
-                                FirebaseAuth.instance.sendPasswordResetEmail(email: email.text);
-                                AwesomeDialog(
-                      context: context,
-                      dialogType:DialogType.success,
-                      animType: AnimType.rightSlide,
-                      title: "Success",
-                      desc: 'Password reset email sent!',).show();
-                              }
-                              catch (e) {
-                                AwesomeDialog(
-                      context: context,
-                      dialogType:DialogType.error,
-                      animType: AnimType.rightSlide,
-                      title: "Error",
-                      desc: 'Check Spelling or user not found!',
-                                ).show();
-                              }
-                            },
-                            style: TextButton.styleFrom(
-                              foregroundColor: Colors.white,
-                            ),
-                            child: const Text(
-                              'Forgot Password?',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 20),
+
+                    // Admin login
                     TextButton(
-                      onPressed: () {
-                        Navigator.pushNamed(context, 'admin_login');
-                      },
+                      onPressed: () =>
+                          Navigator.pushNamed(context, 'admin_login'),
                       child: Text(
                         'Admin Login',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
+                        style: GoogleFonts.poppins(
+                          color: AppTheme.textSecondary,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ),
@@ -339,7 +245,7 @@ class _LoginPageState extends State<Login> {
                 ),
               ),
             ),
-          ),
+          ],
         ),
       ),
     );

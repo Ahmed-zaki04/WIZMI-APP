@@ -2,6 +2,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:wizmi/services/user_profile_service.dart';
 
 class TowingServicePage extends StatefulWidget {
   const TowingServicePage({super.key});
@@ -21,6 +22,29 @@ class _TowingServicePageState extends State<TowingServicePage> {
   final _plateNumberController = TextEditingController();
   bool _urgentRequest = false;
   bool _isSubmitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _prefillFromProfile();
+  }
+
+  Future<void> _prefillFromProfile() async {
+    final data = await UserProfileService.getQuickFillData();
+    if (!mounted) return;
+    if (data['name']?.isNotEmpty == true && _nameController.text.isEmpty) {
+      _nameController.text = data['name']!;
+    }
+    if (data['phone']?.isNotEmpty == true && _phoneController.text.isEmpty) {
+      _phoneController.text = data['phone']!;
+    }
+    if (data['carModel']?.isNotEmpty == true && _carModelController.text.isEmpty) {
+      _carModelController.text = data['carModel']!;
+    }
+    if (data['plateNumber']?.isNotEmpty == true && _plateNumberController.text.isEmpty) {
+      _plateNumberController.text = data['plateNumber']!;
+    }
+  }
 
   Future<void> _submitForm() async {
     if (_formKey.currentState!.validate()) {

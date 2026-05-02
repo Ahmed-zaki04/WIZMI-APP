@@ -1,6 +1,11 @@
-import 'package:flutter/material.dart';
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:smooth_page_indicator/smooth_page_indicator.dart';
+import 'package:wizmi/theme.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -10,8 +15,6 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  static const Color _primary = Color(0xFF0D47A1);
-
   final List<Map<String, dynamic>> _services = [
     {
       'icon': Icons.build_circle_outlined,
@@ -57,16 +60,52 @@ class _HomePageState extends State<HomePage> {
     },
   ];
 
+  static const List<Map<String, dynamic>> _bannerSlides = [
+    {
+      'icon': Icons.local_shipping,
+      'title': '24/7 Emergency Towing',
+      'subtitle': 'From EGP 150 — We come to you',
+      'colors': [Color(0xFF0D47A1), Color(0xFF1565C0)],
+    },
+    {
+      'icon': Icons.cleaning_services,
+      'title': 'Luxury Car Wash',
+      'subtitle': 'Packages from EGP 25',
+      'colors': [Color(0xFF006064), Color(0xFF00838F)],
+    },
+    {
+      'icon': Icons.speed,
+      'title': 'Smart Diagnostics',
+      'subtitle': 'Full scan — EGP 250 flat fee',
+      'colors': [Color(0xFF1B5E20), Color(0xFF2E7D32)],
+    },
+  ];
+
   String _userName = '';
+  String _carModel = '';
   int _selectedIndex = 0;
+  int _bannerIndex = 0;
+
+  late PageController _pageController;
+  Timer? _bannerTimer;
 
   @override
   void initState() {
     super.initState();
-    _loadUserName();
+    _pageController = PageController();
+    _loadUserData();
+    _bannerTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+      if (!mounted) return;
+      final next = (_bannerIndex + 1) % _bannerSlides.length;
+      _pageController.nextPage(
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOut,
+      );
+      setState(() => _bannerIndex = next);
+    });
   }
 
-  Future<void> _loadUserName() async {
+  Future<void> _loadUserData() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
     try {
@@ -77,6 +116,7 @@ class _HomePageState extends State<HomePage> {
       if (doc.exists && mounted) {
         setState(() {
           _userName = doc.data()?['name'] ?? doc.data()?['firstName'] ?? '';
+          _carModel = doc.data()?['carModel'] ?? '';
         });
       }
     } catch (_) {}
@@ -108,23 +148,32 @@ class _HomePageState extends State<HomePage> {
   }
 
   @override
+  void dispose() {
+    _bannerTimer?.cancel();
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: AppTheme.background,
       appBar: AppBar(
-        backgroundColor: _primary,
-        elevation: 0,
-        title: const Text(
+        title: Text(
           'WIZMI',
-          style: TextStyle(
+          style: GoogleFonts.poppins(
             fontSize: 22,
             fontWeight: FontWeight.w900,
             color: Colors.white,
             letterSpacing: 2,
           ),
         ),
-        centerTitle: true,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.shopping_cart_outlined, color: Colors.white),
+            tooltip: 'Cart',
+            onPressed: () => Navigator.pushNamed(context, 'cart'),
+          ),
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.white),
             tooltip: 'Logout',
@@ -136,31 +185,39 @@ class _HomePageState extends State<HomePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildHeroBanner(),
-            _buildSectionHeader(),
+            _buildBanner(),
+            _buildMyCarCard(),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+              child: Text(
+                'Our Services',
+                style: GoogleFonts.poppins(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+            ),
             _buildServicesGrid(),
           ],
         ),
       ),
       bottomNavigationBar: NavigationBar(
-        backgroundColor: Colors.white,
-        elevation: 8,
         selectedIndex: _selectedIndex,
-        indicatorColor: _primary.withValues(alpha: 0.12),
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home, color: Color(0xFF0D47A1)),
+            selectedIcon: Icon(Icons.home, color: AppTheme.primary),
             label: 'Home',
           ),
           NavigationDestination(
             icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person, color: Color(0xFF0D47A1)),
+            selectedIcon: Icon(Icons.person, color: AppTheme.primary),
             label: 'Profile',
           ),
           NavigationDestination(
             icon: Icon(Icons.notifications_outlined),
-            selectedIcon: Icon(Icons.notifications, color: Color(0xFF0D47A1)),
+            selectedIcon: Icon(Icons.notifications, color: AppTheme.primary),
             label: 'Notifications',
           ),
         ],
@@ -178,73 +235,171 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildHeroBanner() {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance.collection('homepage').snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
-          final imageUrl =
-              snapshot.data!.docs[0]['image'] as String? ?? '';
-          if (imageUrl.isNotEmpty) {
-            return SizedBox(
-              width: double.infinity,
-              height: 200,
-              child: Image.network(
-                imageUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => _buildDefaultHero(),
-              ),
-            );
-          }
-        }
-        return _buildDefaultHero();
-      },
-    );
-  }
-
-  Widget _buildDefaultHero() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF0D47A1), Color(0xFF1976D2), Color(0xFF42A5F5)],
+  Widget _buildBanner() {
+    return Column(
+      children: [
+        SizedBox(
+          height: 200,
+          child: PageView.builder(
+            controller: _pageController,
+            itemCount: _bannerSlides.length,
+            onPageChanged: (i) => setState(() => _bannerIndex = i),
+            itemBuilder: (context, index) {
+              final slide = _bannerSlides[index];
+              final colors = slide['colors'] as List<Color>;
+              return Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: colors,
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: colors.last.withValues(alpha: 0.4),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                padding: const EdgeInsets.all(24),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            slide['title'] as String,
+                            style: GoogleFonts.poppins(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            slide['subtitle'] as String,
+                            style: GoogleFonts.poppins(
+                              fontSize: 13,
+                              color: Colors.white70,
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          if (_userName.isNotEmpty)
+                            Text(
+                              'Hello, $_userName!',
+                              style: GoogleFonts.poppins(
+                                fontSize: 12,
+                                color: Colors.white60,
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    Icon(
+                      slide['icon'] as IconData,
+                      size: 72,
+                      color: Colors.white24,
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
         ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(Icons.directions_car, size: 48, color: Colors.white70),
-          const SizedBox(height: 12),
-          Text(
-            _userName.isNotEmpty ? 'Hello, $_userName!' : 'Welcome to WIZMI',
-            style: const TextStyle(
-              fontSize: 26,
-              fontWeight: FontWeight.w900,
-              color: Colors.white,
-            ),
+        SmoothPageIndicator(
+          controller: _pageController,
+          count: _bannerSlides.length,
+          effect: ExpandingDotsEffect(
+            dotHeight: 6,
+            dotWidth: 6,
+            expansionFactor: 3,
+            activeDotColor: AppTheme.primary,
+            dotColor: AppTheme.primary.withValues(alpha: 0.25),
           ),
-          const SizedBox(height: 6),
-          const Text(
-            'Your one-stop solution for all car services',
-            style: TextStyle(fontSize: 14, color: Colors.white70),
-          ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 8),
+      ],
     );
   }
 
-  Widget _buildSectionHeader() {
-    return const Padding(
-      padding: EdgeInsets.fromLTRB(20, 24, 20, 8),
-      child: Text(
-        'Our Services',
-        style: TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
-          color: Color(0xFF1A1A2E),
+  Widget _buildMyCarCard() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      child: InkWell(
+        onTap: () => Navigator.pushNamed(context, 'profile').then((_) => _loadUserData()),
+        borderRadius: BorderRadius.circular(16),
+        child: Ink(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppTheme.primary.withValues(alpha: 0.2)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppTheme.primary.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.directions_car, color: AppTheme.primary, size: 24),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: _carModel.isNotEmpty
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'My Car',
+                            style: GoogleFonts.poppins(
+                              fontSize: 11,
+                              color: AppTheme.textSecondary,
+                            ),
+                          ),
+                          Text(
+                            _carModel,
+                            style: GoogleFonts.poppins(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.textPrimary,
+                            ),
+                          ),
+                        ],
+                      )
+                    : Text(
+                        'Add Your Car',
+                        style: GoogleFonts.poppins(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.primary,
+                        ),
+                      ),
+              ),
+              Text(
+                _carModel.isNotEmpty ? 'Change →' : '→',
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  color: AppTheme.primary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -258,7 +413,7 @@ class _HomePageState extends State<HomePage> {
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
-          childAspectRatio: 0.88,
+          childAspectRatio: 0.85,
           crossAxisSpacing: 12,
           mainAxisSpacing: 12,
         ),

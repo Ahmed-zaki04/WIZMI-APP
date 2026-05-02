@@ -1,7 +1,13 @@
-import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:io';
+
 import 'package:awesome_dialog/awesome_dialog.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:wizmi/theme.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -11,15 +17,17 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  static const Color _primary = Color(0xFF0D47A1);
-
   final _formKey = GlobalKey<FormState>();
-  final _nameController    = TextEditingController();
-  final _phoneController   = TextEditingController();
-  final _addressController = TextEditingController();
+  final _nameController       = TextEditingController();
+  final _phoneController      = TextEditingController();
+  final _addressController    = TextEditingController();
+  final _carBrandController   = TextEditingController();
+  final _carModelController   = TextEditingController();
+  final _plateController      = TextEditingController();
 
   bool _isLoading = true;
   bool _docExists = false;
+  String? _photoUrl;
 
   @override
   void initState() {
@@ -32,6 +40,9 @@ class _ProfilePageState extends State<ProfilePage> {
     _nameController.dispose();
     _phoneController.dispose();
     _addressController.dispose();
+    _carBrandController.dispose();
+    _carModelController.dispose();
+    _plateController.dispose();
     super.dispose();
   }
 
@@ -51,20 +62,24 @@ class _ProfilePageState extends State<ProfilePage> {
 
       if (doc.exists) {
         final data = doc.data()!;
-        _nameController.text    = data['name']    ?? data['firstName'] ?? '';
-        _phoneController.text   = data['phone']   ?? '';
-        _addressController.text = data['address'] ?? '';
-        setState(() { _isLoading = false; _docExists = true; });
+        _nameController.text       = data['name']        ?? data['firstName'] ?? '';
+        _phoneController.text      = data['phone']       ?? '';
+        _addressController.text    = data['address']     ?? '';
+        _carBrandController.text   = data['carBrand']    ?? '';
+        _carModelController.text   = data['carModel']    ?? '';
+        _plateController.text      = data['plateNumber'] ?? '';
+        setState(() {
+          _photoUrl  = data['photoUrl'] as String?;
+          _isLoading = false;
+          _docExists = true;
+        });
       } else {
-        // Document missing — pre-fill email, let user complete the rest
         _nameController.text = user.displayName ?? '';
         setState(() { _isLoading = false; _docExists = false; });
       }
     } catch (_) {
-      // Permission denied or network error — still show the form with email
       if (!mounted) return;
-      final user2 = FirebaseAuth.instance.currentUser;
-      _nameController.text = user2?.displayName ?? '';
+      _nameController.text = FirebaseAuth.instance.currentUser?.displayName ?? '';
       setState(() { _isLoading = false; _docExists = false; });
     }
   }
@@ -79,11 +94,14 @@ class _ProfilePageState extends State<ProfilePage> {
           .collection('users')
           .doc(user.uid)
           .set({
-        'name':    _nameController.text.trim(),
-        'phone':   _phoneController.text.trim(),
-        'address': _addressController.text.trim(),
-        'email':   user.email ?? '',
-        'updatedAt': FieldValue.serverTimestamp(),
+        'name':        _nameController.text.trim(),
+        'phone':       _phoneController.text.trim(),
+        'address':     _addressController.text.trim(),
+        'carBrand':    _carBrandController.text.trim(),
+        'carModel':    _carModelController.text.trim(),
+        'plateNumber': _plateController.text.trim(),
+        'email':       user.email ?? '',
+        'updatedAt':   FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
       if (!mounted) return;
@@ -95,7 +113,7 @@ class _ProfilePageState extends State<ProfilePage> {
         title: 'Saved',
         desc: 'Profile updated successfully!',
         btnOkOnPress: () {},
-        btnOkColor: _primary,
+        btnOkColor: AppTheme.primary,
       ).show();
     } catch (_) {
       if (!mounted) return;
@@ -111,6 +129,29 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
+  Future<void> _pickAndUploadPhoto() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
+    if (picked == null) return;
+    setState(() => _isLoading = true);
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+      final ref = FirebaseStorage.instance.ref('user_photos/${user.uid}.jpg');
+      await ref.putFile(File(picked.path));
+      final url = await ref.getDownloadURL();
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .set({'photoUrl': url}, SetOptions(merge: true));
+      setState(() => _photoUrl = url);
+    } catch (e) {
+      debugPrint('Photo upload error: $e');
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
   Future<void> _signOut() async {
     await FirebaseAuth.instance.signOut();
     if (mounted) Navigator.pushReplacementNamed(context, 'log');
@@ -119,15 +160,11 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        backgroundColor: _primary,
-        title: const Text('My Profile',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        iconTheme: const IconThemeData(color: Colors.white),
+        title: const Text('My Profile'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout, color: Colors.white),
+            icon: const Icon(Icons.logout),
             tooltip: 'Logout',
             onPressed: _signOut,
           ),
@@ -144,8 +181,8 @@ class _ProfilePageState extends State<ProfilePage> {
                   children: [
                     _buildAvatarHeader(),
                     const SizedBox(height: 28),
-                    if (!_docExists)
-                      _buildInfoBanner(),
+                    if (!_docExists) _buildInfoBanner(),
+                    // ── Personal Info ─────────────────────────────────────
                     _buildField(
                       controller: _nameController,
                       label: 'Full Name',
@@ -170,29 +207,65 @@ class _ProfilePageState extends State<ProfilePage> {
                       validator: (v) =>
                           (v == null || v.isEmpty) ? 'Enter your address' : null,
                     ),
+                    const SizedBox(height: 28),
+                    // ── My Car ────────────────────────────────────────────
+                    Text('My Car',
+                        style: Theme.of(context).textTheme.titleMedium),
+                    const SizedBox(height: 12),
+                    Card(
+                      elevation: 1,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16)),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          children: [
+                            _buildField(
+                              controller: _carBrandController,
+                              label: 'Car Brand',
+                              icon: Icons.directions_car_outlined,
+                              validator: null, // optional
+                            ),
+                            const SizedBox(height: 16),
+                            _buildField(
+                              controller: _carModelController,
+                              label: 'Car Model',
+                              icon: Icons.car_repair_outlined,
+                              validator: null,
+                            ),
+                            const SizedBox(height: 16),
+                            _buildField(
+                              controller: _plateController,
+                              label: 'Plate Number',
+                              icon: Icons.numbers_outlined,
+                              validator: null,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                     const SizedBox(height: 32),
+                    // ── Buttons ───────────────────────────────────────────
                     SizedBox(
                       width: double.infinity,
                       height: 52,
                       child: ElevatedButton.icon(
                         onPressed: _saveProfile,
                         icon: const Icon(Icons.save_outlined),
-                        label: const Text(
-                          'SAVE PROFILE',
-                          style: TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.bold),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: _primary,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          elevation: 3,
-                        ),
+                        label: const Text('SAVE PROFILE'),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 52,
+                      child: OutlinedButton(
+                        onPressed: () =>
+                            Navigator.pushNamed(context, 'my_bookings'),
+                        child: const Text('My Bookings →'),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
                     SizedBox(
                       width: double.infinity,
                       height: 52,
@@ -224,19 +297,61 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget _buildAvatarHeader() {
     final user = FirebaseAuth.instance.currentUser;
     final email = user?.email ?? '';
-    final initial =
-        _nameController.text.isNotEmpty ? _nameController.text[0].toUpperCase() : '?';
+    final initial = _nameController.text.isNotEmpty
+        ? _nameController.text[0].toUpperCase()
+        : '?';
 
     return Row(
       children: [
-        CircleAvatar(
-          radius: 36,
-          backgroundColor: _primary,
-          child: Text(
-            initial,
-            style: const TextStyle(
-                fontSize: 28, color: Colors.white, fontWeight: FontWeight.bold),
-          ),
+        Stack(
+          children: [
+            CircleAvatar(
+              radius: 36,
+              backgroundColor: AppTheme.primary,
+              child: _photoUrl != null
+                  ? ClipOval(
+                      child: CachedNetworkImage(
+                        imageUrl: _photoUrl!,
+                        width: 72,
+                        height: 72,
+                        fit: BoxFit.cover,
+                        placeholder: (_, __) => const CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white),
+                        errorWidget: (_, __, ___) => Text(
+                          initial,
+                          style: const TextStyle(
+                              fontSize: 28,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    )
+                  : Text(
+                      initial,
+                      style: const TextStyle(
+                          fontSize: 28,
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold),
+                    ),
+            ),
+            Positioned(
+              bottom: 0,
+              right: 0,
+              child: GestureDetector(
+                onTap: _pickAndUploadPhoto,
+                child: Container(
+                  padding: const EdgeInsets.all(5),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryLight,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 1.5),
+                  ),
+                  child: const Icon(Icons.camera_alt,
+                      color: Colors.white, size: 14),
+                ),
+              ),
+            ),
+          ],
         ),
         const SizedBox(width: 16),
         Expanded(
@@ -247,13 +362,11 @@ class _ProfilePageState extends State<ProfilePage> {
                 _nameController.text.isNotEmpty
                     ? _nameController.text
                     : 'New User',
-                style: const TextStyle(
-                    fontSize: 18, fontWeight: FontWeight.bold),
+                style: Theme.of(context).textTheme.titleLarge,
               ),
               const SizedBox(height: 4),
               Text(email,
-                  style: const TextStyle(
-                      fontSize: 13, color: Colors.grey)),
+                  style: Theme.of(context).textTheme.bodyMedium),
             ],
           ),
         ),
@@ -298,23 +411,7 @@ class _ProfilePageState extends State<ProfilePage> {
       validator: validator,
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon, color: _primary),
-        filled: true,
-        fillColor: Colors.white,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: Colors.grey.shade300),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: Colors.grey.shade300),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Color(0xFF0D47A1), width: 2),
-        ),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        prefixIcon: Icon(icon, color: AppTheme.primary),
       ),
     );
   }

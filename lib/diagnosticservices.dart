@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:wizmi/services/user_profile_service.dart';
 
 class DiagnosticService extends StatefulWidget {
   const DiagnosticService({super.key});
@@ -23,6 +24,26 @@ class _DiagnosticServiceState extends State<DiagnosticService> {
   bool _isSubmitting = false;
   TimeOfDay? _startTime;
   DateTime? _selectedDate;
+
+  @override
+  void initState() {
+    super.initState();
+    _prefillFromProfile();
+  }
+
+  Future<void> _prefillFromProfile() async {
+    final data = await UserProfileService.getQuickFillData();
+    if (!mounted) return;
+    if (data['name']?.isNotEmpty == true && _nameController.text.isEmpty) {
+      _nameController.text = data['name']!;
+    }
+    if (data['phone']?.isNotEmpty == true && _phoneController.text.isEmpty) {
+      _phoneController.text = data['phone']!;
+    }
+    if (data['carModel']?.isNotEmpty == true && _carModelController.text.isEmpty) {
+      _carModelController.text = data['carModel']!;
+    }
+  }
 
   String? _selectedCategory;
   final List<Map<String, dynamic>> _diagnosticCategories = [

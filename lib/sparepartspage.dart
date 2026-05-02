@@ -2,6 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:awesome_dialog/awesome_dialog.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:wizmi/theme.dart';
 
 class Product extends StatefulWidget {
   const Product({super.key});
@@ -14,6 +16,7 @@ class _ProductState extends State<Product> {
   final Color _primaryColor = const Color(0xFF0D47A1);
   String? selectedBrandId;
   String? selectedBrandName;
+  String _searchQuery = '';
 
   @override
   void initState() {
@@ -42,7 +45,26 @@ class _ProductState extends State<Product> {
           ),
         ],
       ),
-      body: StreamBuilder<QuerySnapshot>(
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            child: TextField(
+              onChanged: (v) => setState(() => _searchQuery = v.toLowerCase()),
+              decoration: InputDecoration(
+                hintText: 'Search parts...',
+                prefixIcon: Icon(Icons.search, color: AppTheme.primary),
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+              ),
+            ),
+          ),
+          Expanded(child: StreamBuilder<QuerySnapshot>(
         stream: selectedBrandId != null
             ? FirebaseFirestore.instance
                 .collection("product")
@@ -59,8 +81,14 @@ class _ProductState extends State<Product> {
           }
 
           final docs = snapshot.data!.docs;
-          
-          if (docs.isEmpty) {
+          final filtered = _searchQuery.isEmpty
+              ? docs
+              : docs.where((d) {
+                  final name = (d.data() as Map)['name']?.toString().toLowerCase() ?? '';
+                  return name.contains(_searchQuery);
+                }).toList();
+
+          if (filtered.isEmpty) {
             return const Center(child: Text('No products available'));
           }
 
@@ -72,9 +100,9 @@ class _ProductState extends State<Product> {
               mainAxisSpacing: 16,
               childAspectRatio: 0.65,
             ),
-            itemCount: docs.length,
+            itemCount: filtered.length,
             itemBuilder: (context, index) {
-              final Map<String, dynamic> data = docs[index].data() as Map<String, dynamic>;
+              final Map<String, dynamic> data = filtered[index].data() as Map<String, dynamic>;
 
               return Card(
                 elevation: 4,
@@ -91,13 +119,15 @@ class _ProductState extends State<Product> {
                           top: Radius.circular(12),
                         ),
                         child: data['image'] != null
-                            ? Image.network(
-                                data['image'].toString(),
+                            ? CachedNetworkImage(
+                                imageUrl: data['image'].toString(),
                                 fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) =>
-                                    const Icon(Icons.broken_image, size: 50),
+                                placeholder: (_, __) => const Center(
+                                    child: CircularProgressIndicator(strokeWidth: 2)),
+                                errorWidget: (_, __, ___) => const Icon(
+                                    Icons.directions_car, size: 40, color: Colors.grey),
                               )
-                            : const Icon(Icons.broken_image, size: 50),
+                            : const Icon(Icons.directions_car, size: 40, color: Colors.grey),
                       ),
                     ),
                     Expanded(
@@ -145,7 +175,7 @@ class _ProductState extends State<Product> {
                                   icon: const Icon(Icons.add_shopping_cart),
                                   iconSize: 20,
                                   color: _primaryColor,
-                                  onPressed: () => _addToCart(docs[index].id),
+                                  onPressed: () => _addToCart(filtered[index].id),
                                 ),
                               ],
                             ),
@@ -159,6 +189,8 @@ class _ProductState extends State<Product> {
             },
           );
         },
+          )),
+        ],
       ),
     );
   }

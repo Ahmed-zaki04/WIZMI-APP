@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:wizmi/services/user_profile_service.dart';
 
 class CarRentalPage extends StatefulWidget {
   const CarRentalPage({super.key});
@@ -26,6 +27,23 @@ class _CarRentalPageState extends State<CarRentalPage> {
   DateTime? _endDate;
   bool _withDriver = false;
   bool _withInsurance = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _prefillFromProfile();
+  }
+
+  Future<void> _prefillFromProfile() async {
+    final data = await UserProfileService.getQuickFillData();
+    if (!mounted) return;
+    if (data['name']?.isNotEmpty == true && _nameController.text.isEmpty) {
+      _nameController.text = data['name']!;
+    }
+    if (data['phone']?.isNotEmpty == true && _phoneController.text.isEmpty) {
+      _phoneController.text = data['phone']!;
+    }
+  }
 
   final List<Map<String, dynamic>> _carTypes = [
     {

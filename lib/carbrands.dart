@@ -1,11 +1,19 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:wizmi/theme.dart';
 
-class CarBrands extends StatelessWidget {
-  final Color _primaryColor = const Color(0xFF0D47A1);
-
+class CarBrands extends StatefulWidget {
   const CarBrands({super.key});
+
+  @override
+  State<CarBrands> createState() => _CarBrandsState();
+}
+
+class _CarBrandsState extends State<CarBrands> {
+  final Color _primaryColor = const Color(0xFF0D47A1);
+  String _searchQuery = '';
 
   @override
   Widget build(BuildContext context) {
@@ -14,87 +22,118 @@ class CarBrands extends StatelessWidget {
         title: const Text('Car Brands'),
         backgroundColor: _primaryColor,
       ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance.collection("car_brands").snapshots(),
-        builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          }
-
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          final docs = snapshot.data!.docs;
-          
-          if (docs.isEmpty) {
-            return const Center(child: Text('No car brands available'));
-          }
-
-          return GridView.builder(
-            padding: const EdgeInsets.all(16),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              childAspectRatio: 1.0,
-            ),
-            itemCount: docs.length,
-            itemBuilder: (context, index) {
-              final Map<String, dynamic> data = docs[index].data() as Map<String, dynamic>;
-              
-              return GestureDetector(
-                onTap: () {
-                  Navigator.pushNamed(
-                    context,
-                    'spareparts',
-                    arguments: {
-                      'brandId': docs[index].id,
-                      'brandName': data['name']?.toString() ?? 'Unknown Brand',
-                    },
-                  );
-                },
-                child: Card(
-                  elevation: 4,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey.shade200),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Expanded(
-                          child: data['logo'] != null
-                              ? Image.network(
-                                  data['logo'].toString(),
-                                  fit: BoxFit.contain,
-                                  errorBuilder: (context, error, stackTrace) =>
-                                      const Icon(Icons.car_repair, size: 50),
-                                )
-                              : const Icon(Icons.car_repair, size: 50),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          data['name']?.toString() ?? 'Unknown Brand',
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            child: TextField(
+              onChanged: (v) => setState(() => _searchQuery = v.toLowerCase()),
+              decoration: InputDecoration(
+                hintText: 'Search brands...',
+                prefixIcon: Icon(Icons.search, color: AppTheme.primary),
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide.none,
                 ),
-              );
-            },
-          );
-        },
+                contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+              ),
+            ),
+          ),
+          Expanded(
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance.collection("car_brands").snapshots(),
+              builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
+                if (snapshot.hasError) {
+                  return Center(child: Text('Error: ${snapshot.error}'));
+                }
+
+                if (!snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                final docs = snapshot.data!.docs;
+                final filtered = _searchQuery.isEmpty
+                    ? docs
+                    : docs.where((d) {
+                        final name = (d.data() as Map)['name']?.toString().toLowerCase() ?? '';
+                        return name.contains(_searchQuery);
+                      }).toList();
+
+                if (filtered.isEmpty) {
+                  return const Center(child: Text('No car brands available'));
+                }
+
+                return GridView.builder(
+                  padding: const EdgeInsets.all(16),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                    childAspectRatio: 1.0,
+                  ),
+                  itemCount: filtered.length,
+                  itemBuilder: (context, index) {
+                    final Map<String, dynamic> data = filtered[index].data() as Map<String, dynamic>;
+
+                    return GestureDetector(
+                      onTap: () {
+                        Navigator.pushNamed(
+                          context,
+                          'spareparts',
+                          arguments: {
+                            'brandId': filtered[index].id,
+                            'brandName': data['name']?.toString() ?? 'Unknown Brand',
+                          },
+                        );
+                      },
+                      child: Card(
+                        elevation: 4,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.grey.shade200),
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Expanded(
+                                child: data['logo'] != null
+                                    ? CachedNetworkImage(
+                                        imageUrl: data['logo'].toString(),
+                                        fit: BoxFit.contain,
+                                        placeholder: (_, __) => const Center(
+                                            child: CircularProgressIndicator(strokeWidth: 2)),
+                                        errorWidget: (_, __, ___) => const Icon(
+                                            Icons.directions_car, size: 40, color: Colors.grey),
+                                      )
+                                    : const Icon(Icons.directions_car, size: 40, color: Colors.grey),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                data['name']?.toString() ?? 'Unknown Brand',
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

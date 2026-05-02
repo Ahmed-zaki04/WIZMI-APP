@@ -20,9 +20,11 @@ class _TowingServicePageState extends State<TowingServicePage> {
   final _carModelController = TextEditingController();
   final _plateNumberController = TextEditingController();
   bool _urgentRequest = false;
+  bool _isSubmitting = false;
 
   Future<void> _submitForm() async {
     if (_formKey.currentState!.validate()) {
+      setState(() => _isSubmitting = true);
       try {
         final user = FirebaseAuth.instance.currentUser;
         debugPrint('Current user: ${user?.uid}'); // Log user ID
@@ -68,6 +70,8 @@ class _TowingServicePageState extends State<TowingServicePage> {
         if (mounted) {
           _showErrorDialog(context, 'There was an error submitting your request: $e');
         }
+      } finally {
+        if (mounted) setState(() => _isSubmitting = false);
       }
     }
   }
@@ -258,7 +262,7 @@ class _TowingServicePageState extends State<TowingServicePage> {
                       width: double.infinity,
                       height: 50,
                       child: ElevatedButton(
-                        onPressed: _submitForm,
+                        onPressed: _isSubmitting ? null : _submitForm,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: _primaryColor,
                           shape: RoundedRectangleBorder(
@@ -266,14 +270,16 @@ class _TowingServicePageState extends State<TowingServicePage> {
                           ),
                           elevation: 2,
                         ),
-                        child: const Text(
-                          "REQUEST TOWING",
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
+                        child: _isSubmitting
+                            ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                            : const Text(
+                                "REQUEST TOWING",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
                       ),
                     ),
                   ],

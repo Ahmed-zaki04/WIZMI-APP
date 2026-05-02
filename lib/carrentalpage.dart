@@ -20,6 +20,7 @@ class _CarRentalPageState extends State<CarRentalPage> {
   final TextEditingController _pickupLocationController = TextEditingController();
   final TextEditingController _dropoffLocationController = TextEditingController();
 
+  bool _isSubmitting = false;
   String? _selectedCarType;
   DateTime? _startDate;
   DateTime? _endDate;
@@ -73,6 +74,7 @@ class _CarRentalPageState extends State<CarRentalPage> {
 
   Future<void> _submitForm() async {
     if (_formKey.currentState!.validate() && _selectedCarType != null && _startDate != null && _endDate != null) {
+      setState(() => _isSubmitting = true);
       try {
         final user = FirebaseAuth.instance.currentUser;
         if (user == null) {
@@ -105,6 +107,8 @@ class _CarRentalPageState extends State<CarRentalPage> {
         if (mounted) {
           _showErrorDialog(context, 'There was an error submitting your request: $e');
         }
+      } finally {
+        if (mounted) setState(() => _isSubmitting = false);
       }
     }
   }
@@ -240,7 +244,7 @@ class _CarRentalPageState extends State<CarRentalPage> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Container(
+                    SizedBox(
                       height: 150,
                       child: ListView.builder(
                         scrollDirection: Axis.horizontal,
@@ -504,7 +508,7 @@ class _CarRentalPageState extends State<CarRentalPage> {
                       width: double.infinity,
                       height: 45,
                       child: ElevatedButton(
-                        onPressed: _submitForm,
+                        onPressed: _isSubmitting ? null : _submitForm,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: _primaryColor,
                           shape: RoundedRectangleBorder(
@@ -512,14 +516,16 @@ class _CarRentalPageState extends State<CarRentalPage> {
                           ),
                           elevation: 2,
                         ),
-                        child: const Text(
-                          "BOOK NOW",
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
+                        child: _isSubmitting
+                            ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                            : const Text(
+                                "BOOK NOW",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
                       ),
                     ),
                     const SizedBox(height: 20),

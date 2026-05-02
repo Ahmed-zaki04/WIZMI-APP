@@ -20,6 +20,7 @@ class _MechanicServicePageState extends State<MechanicService> {
   final TextEditingController _locationController = TextEditingController();
   final TextEditingController _partController = TextEditingController();
 
+  bool _isSubmitting = false;
   String? _selectedServiceType;
   final List<Map<String, dynamic>> _serviceTypes = [
     {
@@ -67,7 +68,14 @@ class _MechanicServicePageState extends State<MechanicService> {
   ];
 
   Future<void> _submitForm() async {
+    if (_selectedServiceType == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: const Text('Please select a service type'), backgroundColor: _primaryColor),
+      );
+      return;
+    }
     if (_formKey.currentState!.validate()) {
+      setState(() => _isSubmitting = true);
       try {
         final user = FirebaseAuth.instance.currentUser;
         if (user == null) {
@@ -123,6 +131,8 @@ class _MechanicServicePageState extends State<MechanicService> {
             btnOkOnPress: () {},
           ).show();
         }
+      } finally {
+        if (mounted) setState(() => _isSubmitting = false);
       }
     }
   }
@@ -209,7 +219,7 @@ class _MechanicServicePageState extends State<MechanicService> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Container(
+                    SizedBox(
                       height: 220,
                       child: ListView.builder(
                         scrollDirection: Axis.horizontal,
@@ -397,7 +407,7 @@ class _MechanicServicePageState extends State<MechanicService> {
                       width: double.infinity,
                       height: 50,
                       child: ElevatedButton(
-                        onPressed: _submitForm,
+                        onPressed: _isSubmitting ? null : _submitForm,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: _primaryColor,
                           shape: RoundedRectangleBorder(
@@ -405,14 +415,16 @@ class _MechanicServicePageState extends State<MechanicService> {
                           ),
                           elevation: 2,
                         ),
-                        child: const Text(
-                          "REQUEST MECHANIC",
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
+                        child: _isSubmitting
+                            ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                            : const Text(
+                                "REQUEST MECHANIC",
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
                       ),
                     ),
                   ],

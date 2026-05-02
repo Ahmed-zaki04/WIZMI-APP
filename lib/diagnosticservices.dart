@@ -20,6 +20,7 @@ class _DiagnosticServiceState extends State<DiagnosticService> {
   final TextEditingController _carModelController = TextEditingController();
   final TextEditingController _symptomsController = TextEditingController();
 
+  bool _isSubmitting = false;
   TimeOfDay? _startTime;
   DateTime? _selectedDate;
 
@@ -115,6 +116,7 @@ class _DiagnosticServiceState extends State<DiagnosticService> {
       return;
     }
     if (_formKey.currentState!.validate() && _selectedCategory != null && _selectedDate != null) {
+      setState(() => _isSubmitting = true);
       try {
         final user = FirebaseAuth.instance.currentUser;
         if (user == null) {
@@ -146,6 +148,8 @@ class _DiagnosticServiceState extends State<DiagnosticService> {
         if (mounted) {
           _showErrorDialog(context, 'There was an error submitting your request: $e');
         }
+      } finally {
+        if (mounted) setState(() => _isSubmitting = false);
       }
     }
   }
@@ -266,7 +270,7 @@ class _DiagnosticServiceState extends State<DiagnosticService> {
                       ),
               ),
               const SizedBox(height: 8),
-                    Container(
+                    SizedBox(
                       height: 220,
                       child: ListView.builder(
                         scrollDirection: Axis.horizontal,
@@ -558,7 +562,7 @@ class _DiagnosticServiceState extends State<DiagnosticService> {
                 width: double.infinity,
                       height: 50,
                 child: ElevatedButton(
-                  onPressed: _submitForm,
+                  onPressed: _isSubmitting ? null : _submitForm,
                   style: ElevatedButton.styleFrom(
                           backgroundColor: _primaryColor,
                     shape: RoundedRectangleBorder(
@@ -566,14 +570,16 @@ class _DiagnosticServiceState extends State<DiagnosticService> {
                     ),
                           elevation: 2,
                   ),
-                  child: const Text(
-                          "REQUEST DIAGNOSTIC",
-                    style: TextStyle(
-                            fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
+                  child: _isSubmitting
+                      ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      : const Text(
+                              "REQUEST DIAGNOSTIC",
+                          style: TextStyle(
+                              fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
                 ),
               ),
             ],

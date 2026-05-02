@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:awesome_dialog/awesome_dialog.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class CarWashingPage extends StatefulWidget {
   const CarWashingPage({super.key});
@@ -19,7 +20,8 @@ class _CarWashingPageState extends State<CarWashingPage> {
   final TextEditingController _carModelController = TextEditingController();
 
   String? _selectedPackage;
-  List<String> _selectedAddOns = [];
+  final List<String> _selectedAddOns = [];
+  bool _isSubmitting = false;
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
 
@@ -98,9 +100,16 @@ class _CarWashingPageState extends State<CarWashingPage> {
   ];
 
   Future<void> _submitForm() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      _showErrorDialog(context, 'Please login first.');
+      return;
+    }
     if (_formKey.currentState!.validate() && _selectedPackage != null && _selectedDate != null && _selectedTime != null) {
+      setState(() => _isSubmitting = true);
       try {
         await FirebaseFirestore.instance.collection('car_wash_requests').add({
+          'userId': user.uid,
           'name': _nameController.text,
           'phone': _phoneController.text,
           'location': _locationController.text,
@@ -120,6 +129,8 @@ class _CarWashingPageState extends State<CarWashingPage> {
         if (mounted) {
           _showErrorDialog(context, 'There was an error scheduling your appointment: $e');
         }
+      } finally {
+        if (mounted) setState(() => _isSubmitting = false);
       }
     }
   }
@@ -239,7 +250,7 @@ class _CarWashingPageState extends State<CarWashingPage> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Container(
+                    SizedBox(
                       height: 150,
                       child: ListView.builder(
                         scrollDirection: Axis.horizontal,
@@ -504,7 +515,7 @@ class _CarWashingPageState extends State<CarWashingPage> {
                             label: Text(
                               _selectedTime == null
                                   ? 'Select Time'
-                                  : '${_selectedTime!.format(context)}',
+                                  : _selectedTime!.format(context),
                               style: const TextStyle(color: Colors.white),
                             ),
                             style: ElevatedButton.styleFrom(
@@ -525,7 +536,7 @@ class _CarWashingPageState extends State<CarWashingPage> {
                       width: double.infinity,
                       height: 50,
                       child: ElevatedButton(
-                        onPressed: _submitForm,
+                        onPressed: _isSubmitting ? null : _submitForm,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: _primaryColor,
                           shape: RoundedRectangleBorder(
@@ -533,14 +544,16 @@ class _CarWashingPageState extends State<CarWashingPage> {
                           ),
                           elevation: 2,
                         ),
-                        child: const Text(
-                          "BOOK APPOINTMENT",
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
+                        child: _isSubmitting
+                            ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                            : const Text(
+                                "BOOK APPOINTMENT",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
                       ),
                     ),
                   ],

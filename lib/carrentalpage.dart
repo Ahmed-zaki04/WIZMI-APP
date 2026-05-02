@@ -217,7 +217,7 @@ class _CarRentalPageState extends State<CarRentalPage> {
                   Text(
                     "Choose from our luxury vehicle collection",
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.9),
+                      color: Colors.white.withValues(alpha: 0.9),
                       fontSize: 18,
                     ),
                   ),
@@ -265,7 +265,7 @@ class _CarRentalPageState extends State<CarRentalPage> {
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.grey.withOpacity(0.1),
+                                    color: Colors.grey.withValues(alpha: 0.1),
                                     spreadRadius: 1,
                                     blurRadius: 5,
                                     offset: const Offset(0, 3),
@@ -297,11 +297,11 @@ class _CarRentalPageState extends State<CarRentalPage> {
                                       vertical: 4,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: isSelected ? Colors.white.withOpacity(0.2) : _primaryColor.withOpacity(0.1),
+                                      color: isSelected ? Colors.white.withValues(alpha: 0.2) : _primaryColor.withValues(alpha: 0.1),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Text(
-                                      '\$${carType['price']}/day',
+                                      'EGP ${carType['price']}/day',
                                       style: TextStyle(
                                         color: isSelected ? Colors.white : _primaryColor,
                                         fontWeight: FontWeight.bold,
@@ -440,7 +440,7 @@ class _CarRentalPageState extends State<CarRentalPage> {
                     const SizedBox(height: 10),
                     Container(
                       decoration: BoxDecoration(
-                        color: _withDriver ? _primaryColor.withOpacity(0.1) : Colors.grey.shade50,
+                        color: _withDriver ? _primaryColor.withValues(alpha: 0.1) : Colors.grey.shade50,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: _withDriver ? _primaryColor : Colors.grey.shade300,
@@ -455,7 +455,7 @@ class _CarRentalPageState extends State<CarRentalPage> {
                           ),
                         ),
                         subtitle: const Text(
-                          "Experienced chauffeur service",
+                          "Experienced chauffeur service · +EGP 200/day",
                           style: TextStyle(fontSize: 12),
                         ),
                         value: _withDriver,
@@ -470,7 +470,7 @@ class _CarRentalPageState extends State<CarRentalPage> {
                     const SizedBox(height: 10),
                     Container(
                       decoration: BoxDecoration(
-                        color: _withInsurance ? _primaryColor.withOpacity(0.1) : Colors.grey.shade50,
+                        color: _withInsurance ? _primaryColor.withValues(alpha: 0.1) : Colors.grey.shade50,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: _withInsurance ? _primaryColor : Colors.grey.shade300,
@@ -485,7 +485,7 @@ class _CarRentalPageState extends State<CarRentalPage> {
                           ),
                         ),
                         subtitle: const Text(
-                          "Comprehensive coverage package",
+                          "Comprehensive coverage package · +EGP 150/day",
                           style: TextStyle(fontSize: 12),
                         ),
                         value: _withInsurance,
@@ -498,7 +498,8 @@ class _CarRentalPageState extends State<CarRentalPage> {
                       ),
                     ),
 
-                    const SizedBox(height: 20),
+                    _buildCostSummary(),
+                    const SizedBox(height: 12),
                     SizedBox(
                       width: double.infinity,
                       height: 45,
@@ -528,6 +529,77 @@ class _CarRentalPageState extends State<CarRentalPage> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  int get _selectedCarPrice {
+    if (_selectedCarType == null) return 0;
+    final car = _carTypes.firstWhere(
+      (c) => c['name'] == _selectedCarType,
+      orElse: () => {'price': 0},
+    );
+    return car['price'] as int;
+  }
+
+  Widget _buildCostSummary() {
+    if (_selectedCarType == null || _startDate == null || _endDate == null) {
+      return const SizedBox.shrink();
+    }
+    const int insurancePerDay = 150;
+    const int driverPerDay = 200;
+    final int days = _endDate!.difference(_startDate!).inDays.clamp(1, 9999);
+    final int baseTotal = _selectedCarPrice * days;
+    final int insuranceTotal = _withInsurance ? insurancePerDay * days : 0;
+    final int driverTotal = _withDriver ? driverPerDay * days : 0;
+    final int grandTotal = baseTotal + insuranceTotal + driverTotal;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 4),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0D47A1).withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFF0D47A1).withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Cost Summary',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          _costRow('Rental ($days day${days == 1 ? '' : 's'} × EGP $_selectedCarPrice/day)', baseTotal),
+          if (_withInsurance) _costRow('Insurance (+EGP 150/day)', insuranceTotal),
+          if (_withDriver) _costRow('Driver (+EGP 200/day)', driverTotal),
+          const Divider(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Total',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              Text('EGP $grandTotal',
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                      color: _primaryColor)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _costRow(String label, int amount) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(child: Text(label, style: const TextStyle(fontSize: 13))),
+          Text('EGP $amount',
+              style:
+                  const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+        ],
       ),
     );
   }

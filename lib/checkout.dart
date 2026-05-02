@@ -1,5 +1,6 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:awesome_dialog/awesome_dialog.dart';
 
 class CheckoutPage extends StatefulWidget {
@@ -207,7 +208,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                 ),
                                 subtitle: Text('Quantity: ${item['quantity']}'),
                                 trailing: Text(
-                                  '\$${itemTotal.toStringAsFixed(2)}',
+                                  'EGP ${itemTotal.toStringAsFixed(2)}',
                                   style: const TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 16,
@@ -230,7 +231,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                             ),
                           ),
                           Text(
-                            '\$${widget.total.toStringAsFixed(2)}',
+                            'EGP ${widget.total.toStringAsFixed(2)}',
                             style: const TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
@@ -280,7 +281,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
     try {
       // Create order with customer information
+      final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
       await FirebaseFirestore.instance.collection('orders').add({
+        'userId': uid,
         'customerName': _nameController.text,
         'customerPhone': _phoneController.text,
         'customerAddress': _addressController.text,
@@ -295,7 +298,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
       // Clear cart
       await FirebaseFirestore.instance
           .collection('cart')
-          .doc('user_id')
+          .doc(uid)
           .update({
             'items': [],
             'updatedAt': FieldValue.serverTimestamp(),

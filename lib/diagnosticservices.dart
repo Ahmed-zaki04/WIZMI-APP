@@ -108,6 +108,12 @@ class _DiagnosticServiceState extends State<DiagnosticService> {
   final List<String> _selectedWarningSigns = [];
 
   Future<void> _submitForm() async {
+    if (_selectedWarningSigns.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select at least one warning sign.')),
+      );
+      return;
+    }
     if (_formKey.currentState!.validate() && _selectedCategory != null && _selectedDate != null) {
       try {
         final user = FirebaseAuth.instance.currentUser;
@@ -237,7 +243,7 @@ class _DiagnosticServiceState extends State<DiagnosticService> {
                   Text(
                     "Advanced vehicle diagnostics at your service",
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.9),
+                      color: Colors.white.withValues(alpha: 0.9),
                       fontSize: 18,
                     ),
                   ),
@@ -285,7 +291,7 @@ class _DiagnosticServiceState extends State<DiagnosticService> {
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.grey.withOpacity(0.1),
+                                    color: Colors.grey.withValues(alpha: 0.1),
                                     spreadRadius: 1,
                                     blurRadius: 5,
                                     offset: const Offset(0, 3),
@@ -343,7 +349,7 @@ class _DiagnosticServiceState extends State<DiagnosticService> {
                                             vertical: 1,
                                           ),
                 decoration: BoxDecoration(
-                                            color: isSelected ? Colors.white.withOpacity(0.2) : _primaryColor.withOpacity(0.1),
+                                            color: isSelected ? Colors.white.withValues(alpha: 0.2) : _primaryColor.withValues(alpha: 0.1),
                                             borderRadius: BorderRadius.circular(6),
                                           ),
                                           child: Text(
@@ -402,7 +408,7 @@ class _DiagnosticServiceState extends State<DiagnosticService> {
                     },
                           child: Container(
                             decoration: BoxDecoration(
-                              color: isSelected ? _primaryColor.withOpacity(0.1) : Colors.white,
+                              color: isSelected ? _primaryColor.withValues(alpha: 0.1) : Colors.white,
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(
                                 color: isSelected ? _primaryColor : Colors.grey.shade300,
@@ -526,7 +532,28 @@ class _DiagnosticServiceState extends State<DiagnosticService> {
                 ],
               ),
 
-                    const SizedBox(height: 30),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: _primaryColor.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: _primaryColor.withValues(alpha: 0.3)),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Diagnostic Fee',
+                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                          Text('EGP 250',
+                              style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: _primaryColor)),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
               SizedBox(
                 width: double.infinity,
                       height: 50,

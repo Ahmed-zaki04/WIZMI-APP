@@ -11,11 +11,14 @@ class AdminSignup extends StatefulWidget {
 }
 
 class _AdminSignupState extends State<AdminSignup> {
+  static const String _validInviteCode = 'WIZMI2025';
+
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _inviteCodeController = TextEditingController();
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
@@ -27,10 +30,15 @@ class _AdminSignupState extends State<AdminSignup> {
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _inviteCodeController.dispose();
     super.dispose();
   }
 
   Future<void> _signup() async {
+    if (_inviteCodeController.text.trim() != _validInviteCode) {
+      _showErrorDialog('Invalid Code', 'The admin invite code is incorrect.');
+      return;
+    }
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
 
@@ -142,6 +150,18 @@ class _AdminSignupState extends State<AdminSignup> {
                   ),
                 ),
                 const SizedBox(height: 30),
+                TextFormField(
+                  controller: _inviteCodeController,
+                  decoration: InputDecoration(
+                    labelText: 'Admin Invite Code',
+                    prefixIcon: const Icon(Icons.vpn_key),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  obscureText: true,
+                ),
+                const SizedBox(height: 20),
                 TextFormField(
                   controller: _nameController,
                   decoration: InputDecoration(

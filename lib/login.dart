@@ -295,8 +295,8 @@ class _LoginPageState extends State<Login> {
                       context: context,
                       dialogType:DialogType.success,
                       animType: AnimType.rightSlide,
-                      title: "Error",
-                      desc: 'Successfull!',).show();
+                      title: "Success",
+                      desc: 'Password reset email sent!',).show();
                               }
                               catch (e) {
                                 AwesomeDialog(

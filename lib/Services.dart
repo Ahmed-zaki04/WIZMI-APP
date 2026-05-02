@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:wizmi/mechanicservicepage.dart';
 import 'package:wizmi/towingservicepage.dart';
+import 'package:wizmi/diagnosticservices.dart';
 
 class ServicesPage extends StatefulWidget {
   const ServicesPage({super.key});
@@ -37,7 +38,7 @@ class _ServicesPageState extends State<ServicesPage> {
     {
       'title': 'Diagnostic Checks',
       'icon': Icons.car_repair,
-      'page': const MechanicService(), // Reuse or create new page
+      'page': const DiagnosticService(),
     },
   ];
 
@@ -83,10 +84,27 @@ class _ServicesPageState extends State<ServicesPage> {
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        color: _whiteColor.withOpacity(0.1),
-        image: const DecorationImage(
-          image: AssetImage('assets/services_hero.jpg'),
-          fit: BoxFit.cover,
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF1565C0), Color(0xFF42A5F5)],
+        ),
+      ),
+      child: const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.car_repair, size: 56, color: Colors.white70),
+            SizedBox(height: 8),
+            Text(
+              'Professional Auto Services',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -139,13 +157,13 @@ class _ServicesPageState extends State<ServicesPage> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: _primaryColor.withOpacity(0.2),
+            color: _primaryColor.withValues(alpha: 0.2),
             width: 1,
           ),
           boxShadow: [
             if (isHovered)
               BoxShadow(
-                color: _primaryColor.withOpacity(0.1),
+                color: _primaryColor.withValues(alpha: 0.1),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),

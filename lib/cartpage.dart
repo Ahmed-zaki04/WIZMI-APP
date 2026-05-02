@@ -1,5 +1,6 @@
 ﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:wizmi/checkout.dart';
 
@@ -18,7 +19,7 @@ class CartPage extends StatelessWidget {
       body: StreamBuilder<DocumentSnapshot>(
         stream: FirebaseFirestore.instance
             .collection('cart')
-            .doc('user_id') // Replace with actual user ID
+            .doc(FirebaseAuth.instance.currentUser?.uid ?? '')
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -88,7 +89,7 @@ class CartPage extends StatelessWidget {
                                 style: const TextStyle(fontWeight: FontWeight.bold),
                               ),
                               subtitle: Text(
-                                '\$${product['price']}',
+                                'EGP ${product['price']}',
                                 style: TextStyle(
                                   color: _primaryColor,
                                   fontWeight: FontWeight.bold,
@@ -159,7 +160,7 @@ class CartPage extends StatelessWidget {
                             future: _calculateTotal(items),
                             builder: (context, snapshot) {
                               return Text(
-                                '\$${snapshot.data?.toStringAsFixed(2) ?? '0.00'}',
+                                'EGP ${snapshot.data?.toStringAsFixed(2) ?? '0.00'}',
                                 style: TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
@@ -205,7 +206,7 @@ class CartPage extends StatelessWidget {
 
   Future<void> _removeFromCart(String partId) async {
     try {
-      final cartRef = FirebaseFirestore.instance.collection('cart').doc('user_id');
+      final cartRef = FirebaseFirestore.instance.collection('cart').doc(FirebaseAuth.instance.currentUser?.uid ?? '');
       final cartDoc = await cartRef.get();
       if (!cartDoc.exists) return;
 
@@ -228,7 +229,7 @@ class CartPage extends StatelessWidget {
     }
 
     try {
-      final cartRef = FirebaseFirestore.instance.collection('cart').doc('user_id');
+      final cartRef = FirebaseFirestore.instance.collection('cart').doc(FirebaseAuth.instance.currentUser?.uid ?? '');
       final cartDoc = await cartRef.get();
       if (!cartDoc.exists) return;
 
@@ -267,7 +268,7 @@ class CartPage extends StatelessWidget {
 
   Future<void> _checkout(BuildContext context) async {
     try {
-      final cartRef = FirebaseFirestore.instance.collection('cart').doc('user_id');
+      final cartRef = FirebaseFirestore.instance.collection('cart').doc(FirebaseAuth.instance.currentUser?.uid ?? '');
       final cartDoc = await cartRef.get();
       if (!cartDoc.exists) return;
 

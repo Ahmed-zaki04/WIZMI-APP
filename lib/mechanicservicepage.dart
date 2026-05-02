@@ -25,36 +25,42 @@ class _MechanicServicePageState extends State<MechanicService> {
     {
       'name': 'Engine Repair',
       'icon': Icons.engineering,
+      'price': 500,
       'description': 'Complete repair services',
       'features': ['Engine Tuning', 'Parts Replacement', '24/7 Support'],
     },
     {
       'name': 'Brake Service',
-      'icon': Icons.report,
-      'description': 'brake system maintenance',
+      'icon': Icons.build_circle_outlined,
+      'price': 350,
+      'description': 'Brake system maintenance',
       'features': ['Brake Pads', 'Rotors', 'Fluid Check'],
     },
     {
       'name': 'Oil Change',
       'icon': Icons.oil_barrel,
-      'description': 'oil change and fluid services',
+      'price': 200,
+      'description': 'Oil change and fluid services',
       'features': ['Synthetic Oil', 'Filter Change', 'Inspection'],
     },
     {
       'name': 'Battery Service',
       'icon': Icons.battery_charging_full,
+      'price': 300,
       'description': 'Battery testing and replacement',
       'features': ['Testing', 'Charging', 'Replacement'],
     },
     {
       'name': 'AC Service',
       'icon': Icons.ac_unit,
+      'price': 400,
       'description': 'Complete AC maintenance',
       'features': ['Cooling Check', 'Gas Refill', 'Performance Test'],
     },
     {
       'name': 'Wheel Service',
       'icon': Icons.tire_repair,
+      'price': 150,
       'description': 'Wheel alignment and balancing',
       'features': ['Alignment', 'Balancing', 'Rotation'],
     },
@@ -180,7 +186,7 @@ class _MechanicServicePageState extends State<MechanicService> {
                   Text(
                     "Expert mechanics at your service",
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.9),
+                      color: Colors.white.withValues(alpha: 0.9),
                       fontSize: 20,
                     ),
                   ),
@@ -228,7 +234,7 @@ class _MechanicServicePageState extends State<MechanicService> {
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.grey.withOpacity(0.1),
+                                    color: Colors.grey.withValues(alpha: 0.1),
                                     spreadRadius: 1,
                                     blurRadius: 5,
                                     offset: const Offset(0, 3),
@@ -286,7 +292,7 @@ class _MechanicServicePageState extends State<MechanicService> {
                                             vertical: 1,
                                           ),
                                           decoration: BoxDecoration(
-                                            color: isSelected ? Colors.white.withOpacity(0.2) : _primaryColor.withOpacity(0.1),
+                                            color: isSelected ? Colors.white.withValues(alpha: 0.2) : _primaryColor.withValues(alpha: 0.1),
                                             borderRadius: BorderRadius.circular(6),
                                           ),
                                           child: Text(
@@ -352,7 +358,41 @@ class _MechanicServicePageState extends State<MechanicService> {
                       maxLines: 2,
                       hint: "Describe the issue you're experiencing",
                     ),
-                    const SizedBox(height: 25),
+                    if (_selectedServiceType != null) ...[
+                      const SizedBox(height: 8),
+                      Builder(builder: (context) {
+                        final service = _serviceTypes.firstWhere(
+                          (s) => s['name'] == _selectedServiceType,
+                          orElse: () => {'price': 0},
+                        );
+                        return Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: _primaryColor.withValues(alpha: 0.05),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: _primaryColor.withValues(alpha: 0.3)),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                _selectedServiceType!,
+                                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                              ),
+                              Text(
+                                'EGP ${service['price']}',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: _primaryColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+                    ],
+                    const SizedBox(height: 16),
                     SizedBox(
                       width: double.infinity,
                       height: 50,

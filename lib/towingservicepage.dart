@@ -119,7 +119,7 @@ class _TowingServicePageState extends State<TowingServicePage> {
                   Text(
                     "Professional assistance whenever you need it",
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.9),
+                      color: Colors.white.withValues(alpha: 0.9),
                       fontSize: 16,
                     ),
                   ),
@@ -200,7 +200,7 @@ class _TowingServicePageState extends State<TowingServicePage> {
                     Container(
                       padding: const EdgeInsets.all(15),
                       decoration: BoxDecoration(
-                        color: _urgentRequest ? _primaryColor.withOpacity(0.1) : Colors.grey.shade50,
+                        color: _urgentRequest ? _primaryColor.withValues(alpha: 0.1) : Colors.grey.shade50,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: _urgentRequest ? _primaryColor : Colors.grey.shade300,
@@ -214,7 +214,7 @@ class _TowingServicePageState extends State<TowingServicePage> {
                           ),
                         ),
                         subtitle: const Text(
-                          "Mark as urgent for priority assistance",
+                          "Priority assistance · Standard EGP 150 / Urgent EGP 250",
                           style: TextStyle(fontSize: 12),
                         ),
                         value: _urgentRequest,
@@ -227,7 +227,33 @@ class _TowingServicePageState extends State<TowingServicePage> {
                       ),
                     ),
 
-                    const SizedBox(height: 30),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: _primaryColor.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: _primaryColor.withValues(alpha: 0.3)),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            _urgentRequest ? 'Urgent Towing' : 'Standard Towing',
+                            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                          ),
+                          Text(
+                            _urgentRequest ? 'EGP 250' : 'EGP 150',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: _primaryColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
                     SizedBox(
                       width: double.infinity,
                       height: 50,

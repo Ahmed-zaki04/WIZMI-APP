@@ -1,5 +1,6 @@
 ﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:awesome_dialog/awesome_dialog.dart';
 
 class Product extends StatefulWidget {
@@ -42,7 +43,12 @@ class _ProductState extends State<Product> {
         ],
       ),
       body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance.collection("product").snapshots(),
+        stream: selectedBrandId != null
+            ? FirebaseFirestore.instance
+                .collection("product")
+                .where('brandId', isEqualTo: selectedBrandId)
+                .snapshots()
+            : FirebaseFirestore.instance.collection("product").snapshots(),
         builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
           if (snapshot.hasError) {
             return Center(child: Text('Error: ${snapshot.error}'));
@@ -128,7 +134,7 @@ class _ProductState extends State<Product> {
                               children: [
                                 if (data.containsKey('price') && data['price'] != null)
                                   Text(
-                                    '\$${data['price']}',
+                                    'EGP ${data['price']}',
                                     style: TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.bold,
@@ -159,7 +165,7 @@ class _ProductState extends State<Product> {
 
   Future<void> _addToCart(String productId) async {
     try {
-      final cartRef = FirebaseFirestore.instance.collection('cart').doc('user_id');
+      final cartRef = FirebaseFirestore.instance.collection('cart').doc(FirebaseAuth.instance.currentUser?.uid ?? '');
       
       // Check if cart exists
       final cartDoc = await cartRef.get();

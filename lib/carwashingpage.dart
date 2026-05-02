@@ -108,7 +108,7 @@ class _CarWashingPageState extends State<CarWashingPage> {
           'package': _selectedPackage,
           'addOns': _selectedAddOns,
           'appointmentDate': Timestamp.fromDate(_selectedDate!),
-          'appointmentTime': '${_selectedTime!.hour}:${_selectedTime!.minute}',
+          'appointmentTime': '${_selectedTime!.hour.toString().padLeft(2, '0')}:${_selectedTime!.minute.toString().padLeft(2, '0')}',
           'status': 'pending',
           'timestamp': FieldValue.serverTimestamp(),
         });
@@ -216,7 +216,7 @@ class _CarWashingPageState extends State<CarWashingPage> {
                   Text(
                     "Professional detailing for your vehicle",
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.9),
+                      color: Colors.white.withValues(alpha: 0.9),
                       fontSize: 16,
                     ),
                   ),
@@ -264,7 +264,7 @@ class _CarWashingPageState extends State<CarWashingPage> {
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.grey.withOpacity(0.1),
+                                    color: Colors.grey.withValues(alpha: 0.1),
                                     spreadRadius: 1,
                                     blurRadius: 5,
                                     offset: const Offset(0, 3),
@@ -296,11 +296,11 @@ class _CarWashingPageState extends State<CarWashingPage> {
                                       vertical: 4,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: isSelected ? Colors.white.withOpacity(0.2) : _primaryColor.withOpacity(0.1),
+                                      color: isSelected ? Colors.white.withValues(alpha: 0.2) : _primaryColor.withValues(alpha: 0.1),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Text(
-                                      '\$${package['price']}',
+                                      'EGP ${package['price']}',
                                       style: TextStyle(
                                         color: isSelected ? Colors.white : _primaryColor,
                                         fontWeight: FontWeight.bold,
@@ -357,7 +357,7 @@ class _CarWashingPageState extends State<CarWashingPage> {
                           },
                           child: Container(
                             decoration: BoxDecoration(
-                              color: isSelected ? _primaryColor.withOpacity(0.1) : Colors.white,
+                              color: isSelected ? _primaryColor.withValues(alpha: 0.1) : Colors.white,
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
                                 color: isSelected ? _primaryColor : Colors.grey.shade300,
@@ -369,7 +369,7 @@ class _CarWashingPageState extends State<CarWashingPage> {
                                 Container(
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
-                                    color: isSelected ? _primaryColor.withOpacity(0.1) : Colors.grey.shade50,
+                                    color: isSelected ? _primaryColor.withValues(alpha: 0.1) : Colors.grey.shade50,
                                     shape: BoxShape.circle,
                                   ),
                                   child: Icon(
@@ -395,15 +395,15 @@ class _CarWashingPageState extends State<CarWashingPage> {
                                     vertical: 2,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: isSelected ? Colors.white.withOpacity(0.2) : Colors.blue.shade900.withOpacity(0.05),
+                                    color: isSelected ? Colors.white.withValues(alpha: 0.2) : Colors.blue.shade900.withValues(alpha: 0.05),
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
-                                      color: isSelected ? Colors.white.withOpacity(0.3) : Colors.blue.shade900,
+                                      color: isSelected ? Colors.white.withValues(alpha: 0.3) : Colors.blue.shade900,
                                       width: 1,
                                     ),
                                   ),
                                   child: Text(
-                                    '\$${addOn['price']}',
+                                    'EGP ${addOn['price']}',
                                     style: TextStyle(
                                       color: isSelected ? Colors.white : Colors.blue.shade900,
                                       fontSize: 12,
@@ -417,7 +417,7 @@ class _CarWashingPageState extends State<CarWashingPage> {
                                   child: Text(
                                     addOn['description'],
                                     style: TextStyle(
-                                      color: isSelected ? _primaryColor.withOpacity(0.8) : Colors.grey,
+                                      color: isSelected ? _primaryColor.withValues(alpha: 0.8) : Colors.grey,
                                       fontSize: 10,
                                     ),
                                     textAlign: TextAlign.center,
@@ -519,7 +519,8 @@ class _CarWashingPageState extends State<CarWashingPage> {
                       ],
                     ),
 
-                    const SizedBox(height: 30),
+                    _buildCostSummary(),
+                    const SizedBox(height: 12),
                     SizedBox(
                       width: double.infinity,
                       height: 50,
@@ -548,6 +549,83 @@ class _CarWashingPageState extends State<CarWashingPage> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  int get _packagePrice {
+    if (_selectedPackage == null) return 0;
+    final pkg = _packages.firstWhere(
+      (p) => p['name'] == _selectedPackage,
+      orElse: () => {'price': 0},
+    );
+    return pkg['price'] as int;
+  }
+
+  int get _addOnsTotal {
+    int total = 0;
+    for (final name in _selectedAddOns) {
+      final addOn = _addOns.firstWhere(
+        (a) => a['name'] == name,
+        orElse: () => {'price': 0},
+      );
+      total += addOn['price'] as int;
+    }
+    return total;
+  }
+
+  Widget _buildCostSummary() {
+    if (_selectedPackage == null) return const SizedBox.shrink();
+    final int pkgPrice = _packagePrice;
+    final int addOns = _addOnsTotal;
+    final int total = pkgPrice + addOns;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 4),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _primaryColor.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _primaryColor.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Cost Summary',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('$_selectedPackage', style: const TextStyle(fontSize: 13)),
+              Text('EGP $pkgPrice', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+            ],
+          ),
+          if (_selectedAddOns.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Add-ons (${_selectedAddOns.length})',
+                    style: const TextStyle(fontSize: 13)),
+                Text('EGP $addOns',
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+              ],
+            ),
+          ],
+          const Divider(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Total',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              Text('EGP $total',
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                      color: _primaryColor)),
+            ],
+          ),
+        ],
       ),
     );
   }

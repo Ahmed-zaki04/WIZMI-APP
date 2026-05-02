@@ -58,6 +58,7 @@ class _HomePageState extends State<HomePage> {
   ];
 
   String _userName = '';
+  int _selectedIndex = 0;
 
   @override
   void initState() {
@@ -144,6 +145,7 @@ class _HomePageState extends State<HomePage> {
       bottomNavigationBar: NavigationBar(
         backgroundColor: Colors.white,
         elevation: 8,
+        selectedIndex: _selectedIndex,
         indicatorColor: _primary.withValues(alpha: 0.12),
         destinations: const [
           NavigationDestination(
@@ -163,8 +165,14 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
         onDestinationSelected: (index) {
-          if (index == 1) Navigator.pushNamed(context, 'profile');
-          if (index == 2) Navigator.pushNamed(context, 'notifications');
+          setState(() => _selectedIndex = index);
+          if (index == 1) {
+            Navigator.pushNamed(context, 'profile')
+                .then((_) => setState(() => _selectedIndex = 0));
+          } else if (index == 2) {
+            Navigator.pushNamed(context, 'notifications')
+                .then((_) => setState(() => _selectedIndex = 0));
+          }
         },
       ),
     );

@@ -1,5 +1,6 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class CarBrands extends StatelessWidget {
   final Color _primaryColor = const Color(0xFF0D47A1);
@@ -119,7 +120,7 @@ class ProductCard extends StatelessWidget {
 
   Future<void> _addToCart() async {
     try {
-      final cartRef = FirebaseFirestore.instance.collection('cart').doc('user_id'); // Replace with actual user ID
+      final cartRef = FirebaseFirestore.instance.collection('cart').doc(FirebaseAuth.instance.currentUser?.uid ?? '');
       
       // Check if cart exists
       final cartDoc = await cartRef.get();
@@ -204,7 +205,7 @@ class ProductCard extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        '\$$price',
+                        'EGP $price',
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,

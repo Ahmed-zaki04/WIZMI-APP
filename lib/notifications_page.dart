@@ -26,6 +26,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
           : StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
                   .collection('notifications')
+                  .where('userId', isEqualTo: currentUser.uid)
                   .orderBy('timestamp', descending: true)
                   .snapshots(),
               builder: (context, snapshot) {

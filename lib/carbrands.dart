@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:wizmi/data/static_products.dart';
@@ -306,24 +306,9 @@ class _BrandCardState extends State<_BrandCard> with SingleTickerProviderStateMi
                 flex: 5,
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-                  child: CachedNetworkImage(
-                    imageUrl: widget.brand.logoUrl,
+                  child: SvgPicture.asset(
+                    widget.brand.logoAsset,
                     fit: BoxFit.contain,
-                    placeholder: (_, __) => Shimmer.fromColors(
-                      baseColor: const Color(0xFFE5E7EB),
-                      highlightColor: const Color(0xFFF9FAFB),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                    ),
-                    errorWidget: (_, __, ___) => Icon(
-                      Icons.directions_car_rounded,
-                      size: 52,
-                      color: AppTheme.primary.withValues(alpha: 0.4),
-                    ),
                   ),
                 ),
               ),

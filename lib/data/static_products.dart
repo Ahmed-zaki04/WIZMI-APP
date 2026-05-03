@@ -1,13 +1,13 @@
 class BrandModel {
   final String id;
   final String name;
-  final String logoUrl;
+  final String logoAsset;
   final String segment; // 'B' or 'C'
 
   const BrandModel({
     required this.id,
     required this.name,
-    required this.logoUrl,
+    required this.logoAsset,
     required this.segment,
   });
 }
@@ -33,55 +33,15 @@ class PartModel {
 class SparePartsData {
   static const List<BrandModel> brands = [
     // ── B-Segment (Economy) ────────────────────────────────────────────────
-    BrandModel(
-      id: 'toyota',
-      name: 'Toyota',
-      logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9d/Toyota_carlogo.svg/240px-Toyota_carlogo.svg.png',
-      segment: 'B',
-    ),
-    BrandModel(
-      id: 'hyundai',
-      name: 'Hyundai',
-      logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0e/Hyundai_Motor_Company_logo.svg/240px-Hyundai_Motor_Company_logo.svg.png',
-      segment: 'B',
-    ),
-    BrandModel(
-      id: 'kia',
-      name: 'Kia',
-      logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/13/Kia-logo.png/240px-Kia-logo.png',
-      segment: 'B',
-    ),
-    BrandModel(
-      id: 'chevrolet',
-      name: 'Chevrolet',
-      logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1e/Chevrolet_logo.svg/240px-Chevrolet_logo.svg.png',
-      segment: 'B',
-    ),
+    BrandModel(id: 'toyota',     name: 'Toyota',        logoAsset: 'assets/car_logos/toyota.svg',     segment: 'B'),
+    BrandModel(id: 'hyundai',    name: 'Hyundai',       logoAsset: 'assets/car_logos/hyundai.svg',    segment: 'B'),
+    BrandModel(id: 'kia',        name: 'Kia',           logoAsset: 'assets/car_logos/kia.svg',        segment: 'B'),
+    BrandModel(id: 'chevrolet',  name: 'Chevrolet',     logoAsset: 'assets/car_logos/chevrolet.svg',  segment: 'B'),
     // ── C-Segment (Premium/European) ───────────────────────────────────────
-    BrandModel(
-      id: 'bmw',
-      name: 'BMW',
-      logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/BMW.svg/240px-BMW.svg.png',
-      segment: 'C',
-    ),
-    BrandModel(
-      id: 'mercedes',
-      name: 'Mercedes-Benz',
-      logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/90/Mercedes-Logo.svg/240px-Mercedes-Logo.svg.png',
-      segment: 'C',
-    ),
-    BrandModel(
-      id: 'audi',
-      name: 'Audi',
-      logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c0/Audi-Logo_2016.svg/240px-Audi-Logo_2016.svg.png',
-      segment: 'C',
-    ),
-    BrandModel(
-      id: 'volkswagen',
-      name: 'Volkswagen',
-      logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6d/Volkswagen_logo_2019.svg/240px-Volkswagen_logo_2019.svg.png',
-      segment: 'C',
-    ),
+    BrandModel(id: 'bmw',        name: 'BMW',           logoAsset: 'assets/car_logos/bmw.svg',        segment: 'C'),
+    BrandModel(id: 'mercedes',   name: 'Mercedes-Benz', logoAsset: 'assets/car_logos/mercedes.svg',   segment: 'C'),
+    BrandModel(id: 'audi',       name: 'Audi',          logoAsset: 'assets/car_logos/audi.svg',       segment: 'C'),
+    BrandModel(id: 'volkswagen', name: 'Volkswagen',    logoAsset: 'assets/car_logos/volkswagen.svg', segment: 'C'),
   ];
 
   static Map<String, List<PartModel>> get partsByBrand => {

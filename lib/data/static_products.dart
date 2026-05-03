@@ -36,50 +36,50 @@ class SparePartsData {
     BrandModel(
       id: 'toyota',
       name: 'Toyota',
-      logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/9/9d/Toyota_carlogo.svg',
+      logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9d/Toyota_carlogo.svg/240px-Toyota_carlogo.svg.png',
       segment: 'B',
     ),
     BrandModel(
       id: 'hyundai',
       name: 'Hyundai',
-      logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/0/0e/Hyundai_Motor_Company_logo.svg',
+      logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0e/Hyundai_Motor_Company_logo.svg/240px-Hyundai_Motor_Company_logo.svg.png',
       segment: 'B',
     ),
     BrandModel(
       id: 'kia',
       name: 'Kia',
-      logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/1/13/Kia-logo.png',
+      logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/13/Kia-logo.png/240px-Kia-logo.png',
       segment: 'B',
     ),
     BrandModel(
       id: 'chevrolet',
       name: 'Chevrolet',
-      logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/1/1e/Chevrolet_logo.svg',
+      logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1e/Chevrolet_logo.svg/240px-Chevrolet_logo.svg.png',
       segment: 'B',
     ),
     // ── C-Segment (Premium/European) ───────────────────────────────────────
     BrandModel(
       id: 'bmw',
       name: 'BMW',
-      logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/4/44/BMW.svg',
+      logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/BMW.svg/240px-BMW.svg.png',
       segment: 'C',
     ),
     BrandModel(
       id: 'mercedes',
       name: 'Mercedes-Benz',
-      logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/9/90/Mercedes-Logo.svg',
+      logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/90/Mercedes-Logo.svg/240px-Mercedes-Logo.svg.png',
       segment: 'C',
     ),
     BrandModel(
       id: 'audi',
       name: 'Audi',
-      logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/c/c0/Audi-Logo_2016.svg',
+      logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c0/Audi-Logo_2016.svg/240px-Audi-Logo_2016.svg.png',
       segment: 'C',
     ),
     BrandModel(
       id: 'volkswagen',
       name: 'Volkswagen',
-      logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/6/6d/Volkswagen_logo_2019.svg',
+      logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6d/Volkswagen_logo_2019.svg/240px-Volkswagen_logo_2019.svg.png',
       segment: 'C',
     ),
   ];

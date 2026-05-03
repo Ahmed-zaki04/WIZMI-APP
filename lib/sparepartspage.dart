@@ -1,9 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:wizmi/data/static_products.dart';
 import 'package:wizmi/theme.dart';
 
 class Product extends StatefulWidget {
@@ -17,6 +17,7 @@ class _ProductState extends State<Product> with SingleTickerProviderStateMixin {
   String? _brandId;
   String? _brandName;
   String _searchQuery = '';
+  bool _shimmerDone = false;
   final TextEditingController _searchController = TextEditingController();
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
@@ -26,7 +27,13 @@ class _ProductState extends State<Product> with SingleTickerProviderStateMixin {
     super.initState();
     _fadeController = AnimationController(vsync: this, duration: const Duration(milliseconds: 350));
     _fadeAnimation = CurvedAnimation(parent: _fadeController, curve: Curves.easeOut);
-    _fadeController.forward();
+
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (mounted) {
+        setState(() => _shimmerDone = true);
+        _fadeController.forward();
+      }
+    });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
@@ -46,10 +53,10 @@ class _ProductState extends State<Product> with SingleTickerProviderStateMixin {
     super.dispose();
   }
 
-  Future<void> _addToCart(BuildContext ctx, String productId, String productName) async {
+  Future<void> _addToCart(PartModel part) async {
     final user = FirebaseAuth.instance.currentUser;
-    final messenger = ScaffoldMessenger.of(ctx);
-    final navigator = Navigator.of(ctx);
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
 
     if (user == null) {
       messenger.showSnackBar(
@@ -68,12 +75,20 @@ class _ProductState extends State<Product> with SingleTickerProviderStateMixin {
 
       final cartData = cartDoc.data();
       final items = List<Map<String, dynamic>>.from(cartData?['items'] ?? []);
-      final existingIndex = items.indexWhere((item) => item['partId'] == productId);
+      final existingIndex = items.indexWhere((item) => item['partId'] == part.id);
 
       if (existingIndex != -1) {
-        items[existingIndex]['quantity'] = (items[existingIndex]['quantity'] ?? 0) + 1;
+        items[existingIndex]['quantity'] = (items[existingIndex]['quantity'] as int? ?? 0) + 1;
       } else {
-        items.add({'partId': productId, 'quantity': 1, 'addedAt': DateTime.now().toIso8601String()});
+        items.add({
+          'partId': part.id,
+          'name': part.name,
+          'price': part.price,
+          'imageUrl': '',
+          'brandId': part.brandId,
+          'quantity': 1,
+          'addedAt': DateTime.now().toIso8601String(),
+        });
       }
 
       await cartRef.update({'items': items, 'updatedAt': FieldValue.serverTimestamp()});
@@ -85,7 +100,10 @@ class _ProductState extends State<Product> with SingleTickerProviderStateMixin {
             children: [
               const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
               const SizedBox(width: 10),
-              Expanded(child: Text('$productName added to cart', style: GoogleFonts.poppins(fontSize: 13))),
+              Expanded(
+                child: Text('${part.name} added to cart',
+                    style: GoogleFonts.poppins(fontSize: 13)),
+              ),
             ],
           ),
           backgroundColor: AppTheme.success,
@@ -116,71 +134,77 @@ class _ProductState extends State<Product> with SingleTickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    final allParts = SparePartsData.partsByBrand[_brandId] ?? [];
+    final filtered = _searchQuery.isEmpty
+        ? allParts
+        : allParts.where((p) => p.name.toLowerCase().contains(_searchQuery)).toList();
+
     return Scaffold(
       backgroundColor: AppTheme.background,
-      body: FadeTransition(
-        opacity: _fadeAnimation,
-        child: NestedScrollView(
-          headerSliverBuilder: (context, innerBoxIsScrolled) => [
-            SliverAppBar(
-              expandedHeight: 140,
-              pinned: true,
-              backgroundColor: AppTheme.primary,
-              foregroundColor: Colors.white,
-              actions: [
-                IconButton(
-                  icon: const Icon(Icons.shopping_cart_outlined),
-                  onPressed: () => Navigator.pushNamed(context, 'cart'),
-                  tooltip: 'Cart',
-                ),
-              ],
-              flexibleSpace: FlexibleSpaceBar(
-                background: Container(
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [AppTheme.primaryDark, AppTheme.primary, AppTheme.primaryLight],
-                    ),
+      body: NestedScrollView(
+        headerSliverBuilder: (context, innerBoxIsScrolled) => [
+          SliverAppBar(
+            expandedHeight: 140,
+            pinned: true,
+            backgroundColor: AppTheme.primary,
+            foregroundColor: Colors.white,
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.shopping_cart_outlined),
+                onPressed: () => Navigator.pushNamed(context, 'cart'),
+                tooltip: 'Cart',
+              ),
+            ],
+            flexibleSpace: FlexibleSpaceBar(
+              background: Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [AppTheme.primaryDark, AppTheme.primary, AppTheme.primaryLight],
                   ),
-                  child: SafeArea(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 48, 72, 16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _brandName ?? 'Spare Parts',
-                            style: GoogleFonts.poppins(
-                              color: Colors.white,
-                              fontSize: 22,
-                              fontWeight: FontWeight.w800,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                ),
+                child: SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 48, 72, 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _brandName ?? 'Spare Parts',
+                          style: GoogleFonts.poppins(
+                            color: Colors.white,
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
                           ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'Genuine parts at the best prices',
-                            style: GoogleFonts.poppins(
-                              color: Colors.white.withValues(alpha: 0.8),
-                              fontSize: 12,
-                            ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Genuine parts at the best prices',
+                          style: GoogleFonts.poppins(
+                            color: Colors.white.withValues(alpha: 0.8),
+                            fontSize: 12,
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
               ),
             ),
-          ],
-          body: Column(
-            children: [
-              _buildSearchBar(),
-              Expanded(child: _buildProductGrid()),
-            ],
           ),
+        ],
+        body: Column(
+          children: [
+            _buildSearchBar(),
+            Expanded(
+              child: _shimmerDone
+                  ? _buildProductGrid(filtered)
+                  : _buildShimmer(),
+            ),
+          ],
         ),
       ),
     );
@@ -227,60 +251,54 @@ class _ProductState extends State<Product> with SingleTickerProviderStateMixin {
     );
   }
 
-  Widget _buildProductGrid() {
-    final stream = _brandId != null
-        ? FirebaseFirestore.instance.collection('product').where('brandId', isEqualTo: _brandId).snapshots()
-        : FirebaseFirestore.instance.collection('product').snapshots();
-
-    return StreamBuilder<QuerySnapshot>(
-      stream: stream,
-      builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          return _buildError();
-        }
-
-        if (!snapshot.hasData) {
-          return _buildShimmer();
-        }
-
-        final docs = snapshot.data!.docs;
-        final filtered = _searchQuery.isEmpty
-            ? docs
-            : docs.where((d) {
-                final name = (d.data() as Map)['name']?.toString().toLowerCase() ?? '';
-                return name.contains(_searchQuery);
-              }).toList();
-
-        if (filtered.isEmpty) {
-          return _buildEmpty();
-        }
-
-        return GridView.builder(
-          padding: const EdgeInsets.all(16),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 14,
-            mainAxisSpacing: 14,
-            childAspectRatio: 0.62,
-          ),
-          itemCount: filtered.length,
-          itemBuilder: (context, index) {
-            final data = filtered[index].data() as Map<String, dynamic>;
-            final inStock = (data['stock'] as int? ?? 1) > 0;
-
-            return _ProductCard(
-              productId: filtered[index].id,
-              data: data,
-              inStock: inStock,
-              onAddToCart: () => _addToCart(
-                context,
-                filtered[index].id,
-                data['name']?.toString() ?? 'Item',
+  Widget _buildProductGrid(List<PartModel> parts) {
+    if (parts.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: AppTheme.primary.withValues(alpha: 0.08),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.inventory_2_outlined,
+                    size: 56, color: AppTheme.primary.withValues(alpha: 0.4)),
               ),
-            );
-          },
-        );
-      },
+              const SizedBox(height: 20),
+              Text('No parts found',
+                  style: GoogleFonts.poppins(fontSize: 17, fontWeight: FontWeight.w700, color: AppTheme.textPrimary)),
+              const SizedBox(height: 6),
+              Text(
+                _searchQuery.isNotEmpty ? 'Try a different search term' : 'No parts available for this brand',
+                style: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textSecondary),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: GridView.builder(
+        padding: const EdgeInsets.all(16),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          crossAxisSpacing: 14,
+          mainAxisSpacing: 14,
+          childAspectRatio: 0.70,
+        ),
+        itemCount: parts.length,
+        itemBuilder: (context, index) {
+          final part = parts[index];
+          return _PartCard(part: part, onAddToCart: () => _addToCart(part));
+        },
+      ),
     );
   }
 
@@ -291,7 +309,7 @@ class _ProductState extends State<Product> with SingleTickerProviderStateMixin {
         crossAxisCount: 2,
         crossAxisSpacing: 14,
         mainAxisSpacing: 14,
-        childAspectRatio: 0.62,
+        childAspectRatio: 0.70,
       ),
       itemCount: 6,
       itemBuilder: (_, __) => Shimmer.fromColors(
@@ -300,86 +318,25 @@ class _ProductState extends State<Product> with SingleTickerProviderStateMixin {
         child: Container(
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(18),
           ),
         ),
       ),
     );
   }
-
-  Widget _buildEmpty() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: AppTheme.primary.withValues(alpha: 0.08),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(Icons.inventory_2_outlined,
-                  size: 56, color: AppTheme.primary.withValues(alpha: 0.4)),
-            ),
-            const SizedBox(height: 20),
-            Text('No parts found',
-                style: GoogleFonts.poppins(fontSize: 17, fontWeight: FontWeight.w700, color: AppTheme.textPrimary)),
-            const SizedBox(height: 6),
-            Text(
-              _searchQuery.isNotEmpty
-                  ? 'Try a different search term'
-                  : 'No spare parts available for this brand yet',
-              style: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textSecondary),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildError() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.wifi_off_rounded, size: 56, color: AppTheme.error.withValues(alpha: 0.6)),
-            const SizedBox(height: 16),
-            Text('Could not load parts',
-                style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
-            const SizedBox(height: 6),
-            Text('Check your connection and try again',
-                style: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textSecondary),
-                textAlign: TextAlign.center),
-          ],
-        ),
-      ),
-    );
-  }
 }
 
-class _ProductCard extends StatefulWidget {
-  final String productId;
-  final Map<String, dynamic> data;
-  final bool inStock;
+class _PartCard extends StatefulWidget {
+  final PartModel part;
   final VoidCallback onAddToCart;
 
-  const _ProductCard({
-    required this.productId,
-    required this.data,
-    required this.inStock,
-    required this.onAddToCart,
-  });
+  const _PartCard({required this.part, required this.onAddToCart});
 
   @override
-  State<_ProductCard> createState() => _ProductCardState();
+  State<_PartCard> createState() => _PartCardState();
 }
 
-class _ProductCardState extends State<_ProductCard> with SingleTickerProviderStateMixin {
+class _PartCardState extends State<_PartCard> with SingleTickerProviderStateMixin {
   late AnimationController _scaleController;
 
   @override
@@ -400,13 +357,37 @@ class _ProductCardState extends State<_ProductCard> with SingleTickerProviderSta
     super.dispose();
   }
 
+  IconData get _categoryIcon {
+    switch (widget.part.category.toLowerCase()) {
+      case 'engine': return Icons.settings_outlined;
+      case 'brakes': return Icons.disc_full_rounded;
+      case 'electrical': return Icons.bolt_rounded;
+      case 'cooling': return Icons.thermostat_rounded;
+      case 'fuel': return Icons.local_gas_station_rounded;
+      case 'ac': return Icons.ac_unit_rounded;
+      case 'suspension': return Icons.car_repair_rounded;
+      case 'drivetrain': return Icons.rotate_right_rounded;
+      case 'steering': return Icons.turn_right_rounded;
+      default: return Icons.build_outlined;
+    }
+  }
+
+  Color get _categoryColor {
+    switch (widget.part.category.toLowerCase()) {
+      case 'engine': return AppTheme.primary;
+      case 'brakes': return AppTheme.error;
+      case 'electrical': return const Color(0xFFF59E0B);
+      case 'cooling': return const Color(0xFF0EA5E9);
+      case 'fuel': return const Color(0xFF10B981);
+      case 'ac': return const Color(0xFF06B6D4);
+      case 'suspension': return const Color(0xFF8B5CF6);
+      case 'drivetrain': return const Color(0xFFEF4444);
+      default: return AppTheme.textSecondary;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final name = widget.data['name']?.toString() ?? 'Unnamed Part';
-    final price = widget.data['price']?.toString() ?? '';
-    final description = widget.data['description']?.toString() ?? '';
-    final imageUrl = widget.data['image']?.toString();
-
     return ScaleTransition(
       scale: _scaleController,
       child: GestureDetector(
@@ -429,63 +410,35 @@ class _ProductCardState extends State<_ProductCard> with SingleTickerProviderSta
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Image section
-              Stack(
-                children: [
-                  ClipRRect(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
-                    child: SizedBox(
-                      height: 140,
-                      child: imageUrl != null && imageUrl.isNotEmpty
-                          ? CachedNetworkImage(
-                              imageUrl: imageUrl,
-                              fit: BoxFit.cover,
-                              width: double.infinity,
-                              placeholder: (_, __) => Shimmer.fromColors(
-                                baseColor: const Color(0xFFE5E7EB),
-                                highlightColor: const Color(0xFFF9FAFB),
-                                child: Container(color: Colors.white),
-                              ),
-                              errorWidget: (_, __, ___) => Container(
-                                color: AppTheme.background,
-                                child: Center(
-                                  child: Icon(Icons.settings_outlined,
-                                      size: 44, color: AppTheme.primary.withValues(alpha: 0.3)),
-                                ),
-                              ),
-                            )
-                          : Container(
-                              color: AppTheme.background,
-                              child: Center(
-                                child: Icon(Icons.settings_outlined,
-                                    size: 44, color: AppTheme.primary.withValues(alpha: 0.3)),
-                              ),
-                            ),
-                    ),
-                  ),
-                  // Stock badge
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: Container(
+              // Category icon section (replaces image — no image for static parts)
+              Container(
+                height: 110,
+                decoration: BoxDecoration(
+                  color: _categoryColor.withValues(alpha: 0.08),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(_categoryIcon, size: 44, color: _categoryColor),
+                    const SizedBox(height: 6),
+                    Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
-                        color: widget.inStock
-                            ? AppTheme.success.withValues(alpha: 0.9)
-                            : AppTheme.error.withValues(alpha: 0.9),
+                        color: _categoryColor.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
-                        widget.inStock ? 'In Stock' : 'Out of Stock',
+                        widget.part.category,
                         style: GoogleFonts.poppins(
                           fontSize: 9,
                           fontWeight: FontWeight.w700,
-                          color: Colors.white,
+                          color: _categoryColor,
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
 
               // Info section
@@ -496,7 +449,7 @@ class _ProductCardState extends State<_ProductCard> with SingleTickerProviderSta
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        name,
+                        widget.part.name,
                         style: GoogleFonts.poppins(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
@@ -505,61 +458,55 @@ class _ProductCardState extends State<_ProductCard> with SingleTickerProviderSta
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      if (description.isNotEmpty) ...[
-                        const SizedBox(height: 3),
-                        Text(
-                          description,
-                          style: GoogleFonts.poppins(
-                            fontSize: 10,
-                            color: AppTheme.textSecondary,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                      const SizedBox(height: 3),
+                      Text(
+                        widget.part.description,
+                        style: GoogleFonts.poppins(
+                          fontSize: 10,
+                          color: AppTheme.textSecondary,
                         ),
-                      ],
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                       const Spacer(),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          if (price.isNotEmpty)
-                            Text(
-                              'EGP $price',
-                              style: GoogleFonts.poppins(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w800,
-                                color: AppTheme.primary,
-                              ),
-                            )
-                          else
-                            const SizedBox.shrink(),
-                          if (widget.inStock)
-                            GestureDetector(
-                              onTap: widget.onAddToCart,
-                              child: Container(
-                                width: 34,
-                                height: 34,
-                                decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
-                                    colors: [AppTheme.primaryDark, AppTheme.primaryLight],
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
+                          Text(
+                            'EGP ${widget.part.price}',
+                            style: GoogleFonts.poppins(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
+                              color: AppTheme.primary,
+                            ),
+                          ),
+                          GestureDetector(
+                            onTap: widget.onAddToCart,
+                            child: Container(
+                              width: 34,
+                              height: 34,
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [AppTheme.primaryDark, AppTheme.primaryLight],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                borderRadius: BorderRadius.circular(10),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppTheme.primary.withValues(alpha: 0.35),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 3),
                                   ),
-                                  borderRadius: BorderRadius.circular(10),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: AppTheme.primary.withValues(alpha: 0.35),
-                                      blurRadius: 6,
-                                      offset: const Offset(0, 3),
-                                    ),
-                                  ],
-                                ),
-                                child: const Icon(
-                                  Icons.add_shopping_cart_rounded,
-                                  color: Colors.white,
-                                  size: 16,
-                                ),
+                                ],
+                              ),
+                              child: const Icon(
+                                Icons.add_shopping_cart_rounded,
+                                color: Colors.white,
+                                size: 16,
                               ),
                             ),
+                          ),
                         ],
                       ),
                     ],
